@@ -13,6 +13,12 @@ switch i
     case 2
         xref = 5*cos(s);
         yref = 5*sin(s);
+    case 3
+        xref = 15*cos(s);
+        yref = 15*sin(s);
+    case 4
+        xref = 5*cos(0.05*s)
+        yref = 5*cos(0.05*s)
 end
 
 ref = [xref; yref];
