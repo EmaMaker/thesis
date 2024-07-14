@@ -1,4 +1,5 @@
 function u = control_act(t, x)
+
     global ref dref K b saturation
 
     ref_s = double(subs(ref, t));
@@ -12,7 +13,7 @@ function u = control_act(t, x)
 
     T_inv = [cos(theta), sin(theta); -sin(theta)/b, cos(theta)/b];
 
-    u = T_inv * u_nom;
+    u = T_inv * ( u_nom );
 
     % saturation
     u = min(saturation, max(-saturation, u));
