@@ -2,10 +2,14 @@ clc
 clear all
 close all
 
-global x0 ref dref b K saturation tc tfin
+%% global variables
+global x0 ref dref b K SATURATION tc tfin USE_PREDICTION PREDICTION_STEP PREDICTION_SATURATION_TOLERANCE;
 
-TRAJECTORY = 0
+%% variables
+TRAJECTORY = 6
 INITIAL_CONDITIONS = 1
+USE_PREDICTION = false
+PREDICTION_STEPS = 1
 % distance from the center of the unicycle to the point being tracked
 % ATTENZIONE! CI SARA' SEMPRE UN ERRORE COSTANTE DOVUTO A b. Minore b,
 % minore l'errore
@@ -13,24 +17,47 @@ b = 0.2
 % proportional gain
 K = eye(2)*2
 
+tfin=10
 
 % saturation
 % HYP: a diff. drive robot with motors spinning at 100rpm -> 15.7 rad/s.
 % Radius of wheels 10cm. Wheels distanced 15cm from each other
 % applying transformation, v
 % saturation = [1.57, 20];
-saturation = [1.57; 20];
+SATURATION = [1.57; 20];
+PREDICTION_SATURATION_TOLERANCE = 0.1;
 
-
+%% launch simulation
 % initial state
 % In order, [x, y, theta]
 x0 = set_initial_conditions(INITIAL_CONDITIONS)
 % trajectory to track
 [ref, dref] = set_trajectory(TRAJECTORY)
 
-[t, x, ref_t, U] = simulate_discr(60, 0.1);
-plot_results(t, x, ref_t, U);
+global tu uu
 
+%figure(1)
+%USE_PREDICTION = false;
+%[t, x, ref_t, U] = simulate_discr(tfin, 0.05);
+%plot_results(t, x, ref_t, U);
+
+figure(2)
+USE_PREDICTION = true;
+[t1, x1, ref_t1, U1] = simulate_discr(tfin, 0.05);
+plot_results(t1, x1, ref_t1, U1);
+
+figure(3)
+subplot(1, 2, 1)
+plot(tu, uu(1, :))
+subplot(1, 2, 2)
+plot(tu, uu(2, :))
+%plot_results(t, x-x1, ref_t-ref_t1, U-U1);
+
+
+
+%% FUNCTION DECLARATIONS
+
+% Discrete-time simulation
 function [t, x, ref_t, U] = simulate_discr(tfin, tc)
     global ref x0 u_discr
 
@@ -40,7 +67,6 @@ function [t, x, ref_t, U] = simulate_discr(tfin, tc)
     t = 0;
     u_discr = control_act(t, x0);
     U = u_discr';
-
     
     for n = 1:steps
         tspan = [(n-1)*tc n*tc];
@@ -51,7 +77,7 @@ function [t, x, ref_t, U] = simulate_discr(tfin, tc)
         x = [x; z];
         t = [t; v];
         
-        u_discr = control_act(t(end, :), x(end, :));
+        u_discr = control_act(t(end), x(end, :));
         U = [U; ones(length(v), 1)*u_discr'];
     end
 
@@ -59,6 +85,7 @@ function [t, x, ref_t, U] = simulate_discr(tfin, tc)
 end
 
 
+% Continuos-time simulation
 function [t, x, ref, U] = simulate_cont(tfin)
     global ref x0
 
@@ -79,6 +106,7 @@ function [t, x, ref, U] = simulate_cont(tfin)
     ref = double(subs(ref, t'))';
 end
 
+% Plots
 function plot_results(t, x, ref, U)
     subplot(2,2,1)
     hold on
