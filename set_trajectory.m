@@ -25,8 +25,11 @@ switch i
         xref = 15*cos(s);
         yref = 15*sin(s);
     case 6
-        xref = 5*cos(0.15*s);
-        yref = 5*sin(0.15*s);
+        xref = 0.4*s; 
+        yref = cos(0.4*s);
+    case 7
+        xref = 5*cos(0.05*s);
+        yref = 5*sin(0.05*s);
 end
 
 ref = [xref; yref];

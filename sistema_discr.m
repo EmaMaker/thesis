@@ -1,4 +1,4 @@
-function x = sistema_discr(t, x)
+function x = sistema_discr(t, q)
     global u_discr
-    x = unicycle(t, x, u_discr);
+    q = unicycle(t, q, u_discr);
 end

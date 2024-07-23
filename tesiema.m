@@ -3,7 +3,7 @@ clear all
 close all
 
 %% global variables
-global x0 ref dref b K SATURATION tc tfin USE_PREDICTION PREDICTION_STEP PREDICTION_SATURATION_TOLERANCE;
+global q0 ref dref b K SATURATION tc tfin USE_PREDICTION PREDICTION_STEP PREDICTION_SATURATION_TOLERANCE;
 
 %% variables
 TRAJECTORY = 6
@@ -17,34 +17,34 @@ b = 0.2
 % proportional gain
 K = eye(2)*2
 
-tfin=10
+tfin=30
 
 % saturation
 % HYP: a diff. drive robot with motors spinning at 100rpm -> 15.7 rad/s.
 % Radius of wheels 10cm. Wheels distanced 15cm from each other
 % applying transformation, v
 % saturation = [1.57, 20];
-SATURATION = [1.57; 20];
-PREDICTION_SATURATION_TOLERANCE = 0.1;
+SATURATION = [1; 1];
+PREDICTION_SATURATION_TOLERANCE = 0.0;
 
 %% launch simulation
 % initial state
 % In order, [x, y, theta]
-x0 = set_initial_conditions(INITIAL_CONDITIONS)
+q0 = set_initial_conditions(INITIAL_CONDITIONS)
 % trajectory to track
 [ref, dref] = set_trajectory(TRAJECTORY)
 
 global tu uu
 
-%figure(1)
-%USE_PREDICTION = false;
-%[t, x, ref_t, U] = simulate_discr(tfin, 0.05);
-%plot_results(t, x, ref_t, U);
+figure(1)
+USE_PREDICTION = false;
+[t, q, ref_t, U] = simulate_discr(tfin, 0.1);
+plot_results(t, q, ref_t, U);
 
 figure(2)
 USE_PREDICTION = true;
-[t1, x1, ref_t1, U1] = simulate_discr(tfin, 0.05);
-plot_results(t1, x1, ref_t1, U1);
+[t1, q1, ref_t1, U1] = simulate_discr(tfin, 0.1);
+plot_results(t1, q1, ref_t1, U1);
 
 figure(3)
 subplot(1, 2, 1)
@@ -58,26 +58,26 @@ plot(tu, uu(2, :))
 %% FUNCTION DECLARATIONS
 
 % Discrete-time simulation
-function [t, x, ref_t, U] = simulate_discr(tfin, tc)
-    global ref x0 u_discr
+function [t, q, ref_t, U] = simulate_discr(tfin, tc)
+    global ref q0 u_discr
 
     steps = tfin/tc
     
-    x = x0';
+    q = q0';
     t = 0;
-    u_discr = control_act(t, x0);
+    u_discr = control_act(t, q0);
     U = u_discr';
     
     for n = 1:steps
         tspan = [(n-1)*tc n*tc];
-        z0 = x(end, :);
+        z0 = q(end, :);
         
         [v, z] = ode45(@sistema, tspan, z0);
 
-        x = [x; z];
+        q = [q; z];
         t = [t; v];
         
-        u_discr = control_act(t(end), x(end, :));
+        u_discr = control_act(t(end), q(end, :));
         U = [U; ones(length(v), 1)*u_discr'];
     end
 
@@ -86,20 +86,20 @@ end
 
 
 % Continuos-time simulation
-function [t, x, ref, U] = simulate_cont(tfin)
-    global ref x0
+function [t, q, ref, U] = simulate_cont(tfin)
+    global ref q0
 
     % simulation time
     tspan = linspace(0, tfin);
     % execute simulation
-    [t, x] = ode45(@sistema, tspan, x0);
+    [t, q] = ode45(@sistema, tspan, q0);
     
     % recalc and save input at each timestep
     ts = size(t);
     rows = ts(1);
     U = zeros(rows, 2);
     for row = 1:rows
-        U(row, :) = control_act(t(row), x(row, :));
+        U(row, :) = control_act(t(row), q(row, :));
     end
     
     % plot results
