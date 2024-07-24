@@ -3,91 +3,58 @@ clear all
 close all
 
 %% global variables
-global q0 ref dref b tc K SATURATION tc tfin USE_PREDICTION PREDICTION_HORIZON PREDICTION_SATURATION_TOLERANCE;
+global K SATURATION PREDICTION_HORIZON PREDICTION_SATURATION_TOLERANCE;
 
-%% variables
-TRAJECTORY = 6
-INITIAL_CONDITIONS = 1
-USE_PREDICTION = false
-PREDICTION_HORIZON = 5
-% distance from the center of the unicycle to the point being tracked
-% ATTENZIONE! CI SARA' SEMPRE UN ERRORE COSTANTE DOVUTO A b. Minore b,
-% minore l'errore
-b = 0.2
-% proportional gain
-K = eye(2)*2
+sim_data = load(['tests/sin/common.mat']);
 
-tc = 0.1
-tfin=30
+sim_data.q0 = set_initial_conditions(sim_data.INITIAL_CONDITIONS);
+[ref dref] = set_trajectory(sim_data.TRAJECTORY);
+sim_data.ref = ref;
+sim_data.dref = dref;
 
-% saturation
-% HYP: a diff. drive robot with motors spinning at 100rpm -> 15.7 rad/s.
-% Radius of wheels 10cm. Wheels distanced 15cm from each other
-% applying transformation, v
-% saturation = [1.57, 20];
-SATURATION = [1; 1];
-PREDICTION_SATURATION_TOLERANCE = 0.0;
+spmd (3)
+    worker_index = spmdIndex;
+    data = load(['tests/sin/sin' num2str(spmdIndex) '.mat']);
+    
+    sim_data.PREDICTION_HORIZON = data.PREDICTION_HORIZON;
+    sim_data
 
-%% launch simulation
-% initial state
-% In order, [x, y, theta]
-q0 = set_initial_conditions(INITIAL_CONDITIONS)
-% trajectory to track
-[ref, dref] = set_trajectory(TRAJECTORY)
+    [t, q, ref_t, U] = simulate_discr(sim_data);
+end
 
-global tu uu
-
-figure(1)
-PREDICTION_HORIZON = 0;
-[t, q, ref_t, U] = simulate_discr(tfin);
-plot_results(t, q, ref_t, U);
-
-figure(2)
-PREDICTION_HORIZON = 1;
-[t1, q1, ref_t1, U1] = simulate_discr(tfin);
-plot_results(t1, q1, ref_t1, U1);
-
-figure(3)
-PREDICTION_HORIZON = 2;
-[t2, q2, ref_t2, U2] = simulate_discr(tfin);
-plot_results(t2, q2, ref_t2, U2);
-
-%figure(3)
-%subplot(1, 2, 1)
-%plot(tu, uu(1, :))
-%subplot(1, 2, 2)
-%plot(tu, uu(2, :))
-%plot_results(t, x-x1, ref_t-ref_t1, U-U1);
-
-
+s_ = size(worker_index);
+for n = 1:s_(2)
+    figure(n)
+    plot_results(t{n}, q{n}, ref_t{n}, U{n});
+end
 
 %% FUNCTION DECLARATIONS
 
 % Discrete-time simulation
-function [t, q, ref_t, U] = simulate_discr(tfin)
-    global ref q0 u_discr tc
-
-    steps = tfin/tc
+function [t, q, ref_t, U] = simulate_discr(sim_data)
+    tc = sim_data.tc;
+    steps = sim_data.tfin/tc
     
-    q = q0';
+    q = sim_data.q0';
     t = 0;
-    u_discr = control_act(t, q0);
+    u_discr = control_act(t, q, sim_data);
     U = u_discr';
     
     for n = 1:steps
         tspan = [(n-1)*tc n*tc];
         z0 = q(end, :);
         
-        [v, z] = ode45(@sistema, tspan, z0);
+        %[v, z] = ode45(@sistema_discr, tspan, z0, u_discr);
+        [v, z] = ode45(@(v, z) sistema_discr(v, z, u_discr), tspan, z0);
 
         q = [q; z];
         t = [t; v];
         
-        u_discr = control_act(t(end), q(end, :));
+        u_discr = control_act(t(end), q(end, :), sim_data);
         U = [U; ones(length(v), 1)*u_discr'];
     end
 
-    ref_t = double(subs(ref, t'))';
+    ref_t = double(subs(sim_data.ref, t'))';
 end
 
 

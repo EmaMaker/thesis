@@ -1,42 +1,40 @@
-function u = control_act(t, q)
-    global SATURATION
-    
-    dc = decouple_matrix(q);
-    ut = utrack(t,q);
-    uc = ucorr(t,q);
+function u = control_act(t, q, sim_data)   
+    dc = decouple_matrix(q, sim_data.b);
+    ut = utrack(t, q, sim_data);
+    uc = ucorr(t, q, sim_data);
     u = dc * (ut + uc);
     % saturation
-    u = min(SATURATION, max(-SATURATION, u));
+    u = min(sim_data.SATURATION, max(-sim_data.SATURATION, u));
 end
 
-function u_corr = ucorr(t,q)
-    global SATURATION PREDICTION_SATURATION_TOLERANCE PREDICTION_HORIZON tc
-    
-    if eq(PREDICTION_HORIZON, 0)
+function u_corr = ucorr(t, q, sim_data)
+    pred_hor = sim_data.PREDICTION_HORIZON;
+    SATURATION = sim_data.SATURATION;
+    PREDICTION_SATURATION_TOLERANCE = sim_data.PREDICTION_SATURATION_TOLERANCE;
+    tc = sim_data.tc;
+
+    if eq(pred_hor, 0)
         u_corr = zeros(2,1);
         return
     end
 
     persistent U_corr_history;
     if isempty(U_corr_history)
-        U_corr_history = zeros(2, 1, PREDICTION_HORIZON);
+        U_corr_history = zeros(2, 1, pred_hor);
     end
     
     %disp('start of simulation')
     q_prec = q;
-    %q_pred = [];
-    %u_track_pred = [];
-    %t_inv_pred = [];
-    q_pred=zeros(3,1, PREDICTION_HORIZON);
-    u_track_pred=zeros(2,1, PREDICTION_HORIZON+1);
-    T_inv_pred=zeros(2,2, PREDICTION_HORIZON+1);
+    q_pred=zeros(3,1, pred_hor);
+    u_track_pred=zeros(2,1, pred_hor+1);
+    T_inv_pred=zeros(2,2, pred_hor+1);
     % for each step in the prediction horizon, integrate the system to
     % predict its future state
 
     % the first step takes in q_k-1 and calculates q_new = q_k
     % this means that u_track_pred will contain u_track_k-1 and will not
     % contain u_track_k+C
-    for k = 1:PREDICTION_HORIZON
+    for k = 1:pred_hor
         % start from the old (known) state
 
         % calculate the inputs, based on the old state
@@ -45,9 +43,9 @@ function u_corr = ucorr(t,q)
         u_corr_ = U_corr_history(:, :, k);
         % u_track can be calculated from q
         t_ = t + tc*(k-1);
-        u_track_ = utrack(t_, q_prec);
+        u_track_ = utrack(t_, q_prec, sim_data);
         
-        T_inv = decouple_matrix(q_prec);
+        T_inv = decouple_matrix(q_prec, sim_data.b);
         u_ = T_inv * (u_corr_ + u_track_);
         
         % calc the state integrating with euler
@@ -70,11 +68,11 @@ function u_corr = ucorr(t,q)
     %q_prec
     
     % calculate u_track_k+C
-    u_track_pred(:,:,PREDICTION_HORIZON+1) = utrack(t+tc*PREDICTION_HORIZON, q_prec);
+    u_track_pred(:,:,pred_hor+1) = utrack(t+tc*pred_hor, q_prec, sim_data);
     % remove u_track_k-1
     u_track_pred = u_track_pred(:,:,2:end);
 
-    T_inv_pred(:,:,PREDICTION_HORIZON+1) = decouple_matrix(q_prec);
+    T_inv_pred(:,:,pred_hor+1) = decouple_matrix(q_prec, sim_data.b);
     T_inv_pred = T_inv_pred(:,:,2:end);
 
     %disp('end of patching data up')
@@ -99,11 +97,11 @@ function u_corr = ucorr(t,q)
     % A will be at most PREDICTION_HORIZON * 2 * 2 (2: size of T_inv; 2:
     % accounting for T_inv and -T_inv) by PREDICTION_HORIZON*2 (number of
     % vectors in u_corr times the number of elements [2] in each vector)
-    A_max_elems = PREDICTION_HORIZON * 2 * 2;
+    A_max_elems = pred_hor * 2 * 2;
     A_deq = [];
     b_deq = [];
 
-    for k=1:PREDICTION_HORIZON
+    for k=1:pred_hor
         T_inv = T_inv_pred(:,:,k);
         u_track = u_track_pred(:,:,k);
 
@@ -126,9 +124,9 @@ function u_corr = ucorr(t,q)
     
     % squared norm of u_corr. H must be identity,
     % PREDICTION_HORIZON*size(u_corr)
-    H = eye(PREDICTION_HORIZON*2)*2;
+    H = eye(pred_hor*2)*2;
     % no linear terms
-    f = zeros(PREDICTION_HORIZON*2, 1);
+    f = zeros(pred_hor*2, 1);
 
     % solve qp problem
     options = optimoptions('quadprog', 'Display', 'off');
@@ -136,30 +134,26 @@ function u_corr = ucorr(t,q)
 
     % reshape the vector of vectors to be an array, each element being
     % u_corr_j as a 2x1 vector
-    U_corr_history = reshape(U_corr, [2,1,PREDICTION_HORIZON]);    
+    U_corr_history = reshape(U_corr, [2,1,pred_hor]);    
 
     u_corr=U_corr_history(:,:, 1);
     
 end
 
-function u_track = utrack(t, q)    
-    global ref dref K
-    ref_s = double(subs(ref, t));
-    dref_s = double(subs(dref, t));
+function u_track = utrack(t, q, sim_data)    
+    ref_s = double(subs(sim_data.ref, t));
+    dref_s = double(subs(sim_data.dref, t));
     
-    f = feedback(q);
+    f = feedback(q, sim_data.b);
     err = ref_s - f;
-    u_track = dref_s + K*err;
+    u_track = dref_s + sim_data.K*err;
 end
 
-function q_track = feedback(q)
-    global b
+function q_track = feedback(q, b)
     q_track = [q(1) + b*cos(q(3)); q(2) + b*sin(q(3))  ];
 end
 
-function T_inv = decouple_matrix(q)
-    global b
-
+function T_inv = decouple_matrix(q, b)
     theta = q(3);
     st = sin(theta);
     ct = cos(theta);
