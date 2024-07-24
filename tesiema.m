@@ -3,13 +3,13 @@ clear all
 close all
 
 %% global variables
-global q0 ref dref b K SATURATION tc tfin USE_PREDICTION PREDICTION_STEP PREDICTION_SATURATION_TOLERANCE;
+global q0 ref dref b tc K SATURATION tc tfin USE_PREDICTION PREDICTION_HORIZON PREDICTION_SATURATION_TOLERANCE;
 
 %% variables
 TRAJECTORY = 6
 INITIAL_CONDITIONS = 1
 USE_PREDICTION = false
-PREDICTION_STEPS = 1
+PREDICTION_HORIZON = 5
 % distance from the center of the unicycle to the point being tracked
 % ATTENZIONE! CI SARA' SEMPRE UN ERRORE COSTANTE DOVUTO A b. Minore b,
 % minore l'errore
@@ -17,6 +17,7 @@ b = 0.2
 % proportional gain
 K = eye(2)*2
 
+tc = 0.1
 tfin=30
 
 % saturation
@@ -37,20 +38,25 @@ q0 = set_initial_conditions(INITIAL_CONDITIONS)
 global tu uu
 
 figure(1)
-USE_PREDICTION = false;
-[t, q, ref_t, U] = simulate_discr(tfin, 0.1);
+PREDICTION_HORIZON = 0;
+[t, q, ref_t, U] = simulate_discr(tfin);
 plot_results(t, q, ref_t, U);
 
 figure(2)
-USE_PREDICTION = true;
-[t1, q1, ref_t1, U1] = simulate_discr(tfin, 0.1);
+PREDICTION_HORIZON = 1;
+[t1, q1, ref_t1, U1] = simulate_discr(tfin);
 plot_results(t1, q1, ref_t1, U1);
 
 figure(3)
-subplot(1, 2, 1)
-plot(tu, uu(1, :))
-subplot(1, 2, 2)
-plot(tu, uu(2, :))
+PREDICTION_HORIZON = 2;
+[t2, q2, ref_t2, U2] = simulate_discr(tfin);
+plot_results(t2, q2, ref_t2, U2);
+
+%figure(3)
+%subplot(1, 2, 1)
+%plot(tu, uu(1, :))
+%subplot(1, 2, 2)
+%plot(tu, uu(2, :))
 %plot_results(t, x-x1, ref_t-ref_t1, U-U1);
 
 
@@ -58,8 +64,8 @@ plot(tu, uu(2, :))
 %% FUNCTION DECLARATIONS
 
 % Discrete-time simulation
-function [t, q, ref_t, U] = simulate_discr(tfin, tc)
-    global ref q0 u_discr
+function [t, q, ref_t, U] = simulate_discr(tfin)
+    global ref q0 u_discr tc
 
     steps = tfin/tc
     
