@@ -1,13 +1,14 @@
-function u = control_act(t, q, sim_data)   
+function [u, ut, uc, U_corr_history] = control_act(t, q, sim_data)   
     dc = decouple_matrix(q, sim_data.b);
     ut = utrack(t, q, sim_data);
-    uc = ucorr(t, q, sim_data);
+
+    [uc, U_corr_history] = ucorr(t, q, sim_data);
     u = dc * (ut + uc);
     % saturation
     u = min(sim_data.SATURATION, max(-sim_data.SATURATION, u));
 end
 
-function u_corr = ucorr(t, q, sim_data)
+function [u_corr, U_corr_history] = ucorr(t, q, sim_data)
     pred_hor = sim_data.PREDICTION_HORIZON;
     SATURATION = sim_data.SATURATION;
     PREDICTION_SATURATION_TOLERANCE = sim_data.PREDICTION_SATURATION_TOLERANCE;
@@ -15,14 +16,10 @@ function u_corr = ucorr(t, q, sim_data)
 
     if eq(pred_hor, 0)
         u_corr = zeros(2,1);
+        U_corr_history = zeros(2,1,sim_data.PREDICTION_HORIZON);
         return
-    end
+    end    
 
-    persistent U_corr_history;
-    if isempty(U_corr_history)
-        U_corr_history = zeros(2, 1, pred_hor);
-    end
-    
     %disp('start of simulation')
     q_prec = q;
     q_pred=zeros(3,1, pred_hor);
@@ -32,7 +29,7 @@ function u_corr = ucorr(t, q, sim_data)
     % predict its future state
 
     % the first step takes in q_k-1 and calculates q_new = q_k
-    % this means that u_track_pred will contain u_track_k-1 and will not
+    % this means that u_track_pred(:,:,1) will contain u_track_k-1 and will not
     % contain u_track_k+C
     for k = 1:pred_hor
         % start from the old (known) state
@@ -40,7 +37,7 @@ function u_corr = ucorr(t, q, sim_data)
         % calculate the inputs, based on the old state
 
         % u_corr is the prediction done at some time in the past, as found in U_corr_history
-        u_corr_ = U_corr_history(:, :, k);
+        u_corr_ = sim_data.U_corr_history(:, :, k);
         % u_track can be calculated from q
         t_ = t + tc*(k-1);
         u_track_ = utrack(t_, q_prec, sim_data);
@@ -134,9 +131,9 @@ function u_corr = ucorr(t, q, sim_data)
 
     % reshape the vector of vectors to be an array, each element being
     % u_corr_j as a 2x1 vector
-    U_corr_history = reshape(U_corr, [2,1,pred_hor]);    
-
-    u_corr=U_corr_history(:,:, 1);
+    U_corr_history = reshape(U_corr, [2,1,pred_hor]);
+    %sim_data.U_corr_history = U_corr_history;
+    u_corr=sim_data.U_corr_history(:,:, 1);
     
 end
 
