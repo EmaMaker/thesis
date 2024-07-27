@@ -2,45 +2,64 @@ clc
 clear all
 close all
 
-TEST = 'sin'
+%TESTS = ["sin_faster", "sin", "circle", "straightline", "reverse_straightline"]
+TESTS = ["straightline"]
 
+s_ = size(TESTS);
 
-sim_data = load(['tests/' TEST '/common.mat']);
-sim_data.q0 = set_initial_conditions(sim_data.INITIAL_CONDITIONS);
-[ref dref] = set_trajectory(sim_data.TRAJECTORY);
-sim_data.ref = ref;
-sim_data.dref = dref;
+for i = 1:s_(2)    
+    clear data sim_data
+    close all
+    
+%for i = 1:1
+    TEST = convertStringsToChars(TESTS(i))
+    
+    sim_data = load(['tests/' TEST '/common.mat']);
+    sim_data.q0 = set_initial_conditions(sim_data.INITIAL_CONDITIONS);
+    [ref dref] = set_trajectory(sim_data.TRAJECTORY);
+    sim_data.ref = ref;
+    sim_data.dref = dref;
 
-%sim_data.SATURATION = [0.5; 0.5];
+    spmd (3)
+        worker_index = spmdIndex;
+        data = load(['tests/' TEST '/' num2str(spmdIndex) '.mat']);
+    
+        sim_data.PREDICTION_HORIZON = data.PREDICTION_HORIZON;
+        sim_data.U_corr_history = zeros(2,1,sim_data.PREDICTION_HORIZON);
+        sim_data
+    
+        [t, q, ref_t, U, U_track, U_corr] = simulate_discr(sim_data);
+    
+        disp('Done')
+    end
+    
+    h = []
+    s1_ = size(worker_index);
+    for n = 1:s1_(2)
+        h_ = figure('Name', [TEST ' ' num2str(n)] );
+        h = [h, h_];
+        plot_results(t{n}, q{n}, ref_t{n}, U{n}, U_track{n}, U_corr{n});
+    end
 
-% spmd (3)
-%     worker_index = spmdIndex;
-%     data = load(['tests/' TEST '/' num2str(spmdIndex) '.mat']);
-% 
-%     sim_data.PREDICTION_HORIZON = data.PREDICTION_HORIZON;
-%     sim_data.U_corr_history = zeros(2,1,sim_data.PREDICTION_HORIZON);
-%     sim_data
-% 
-%     [t, q, ref_t, U] = simulate_discr(sim_data);
-% 
-%     disp('Done')
-% end
-% 
-% s_ = size(worker_index);
-% for n = 1:s_(2)
-%     figure(n)
-%     plot_results(t{n}, q{n}, ref_t{n}, U{n});
-% end
+    f1 = [ TEST '-'  datestr(datetime)];
+    f = ['results/' f1];
+    mkdir(f)
+    savefig(h, [f '/' f1 '.fig']);
+    save([f '/workspace.mat']);
 
-
-data = load(['tests/' TEST '/' num2str(2) '.mat']);
-sim_data.PREDICTION_HORIZON = data.PREDICTION_HORIZON;
-sim_data.U_corr_history = zeros(2,1,sim_data.PREDICTION_HORIZON);
-sim_data
-[t, q, ref_t, U, U_track, U_corr] = simulate_discr(sim_data);
+    copyfile(['tests/' TEST], f);
+end
 
 %% 
-plot_results(t,q,ref_t,U, U_track, U_corr);
+
+% data = load(['tests/' TEST '/' num2str(2) '.mat']);
+% sim_data.PREDICTION_HORIZON = data.PREDICTION_HORIZON;
+% sim_data.U_corr_history = zeros(2,1,sim_data.PREDICTION_HORIZON);
+% sim_data
+% [t, q, ref_t, U, U_track, U_corr] = simulate_discr(sim_data);
+% 
+% %% 
+% plot_results(t,q,ref_t,U, U_track, U_corr);
 
 
 %% FUNCTION DECLARATIONS
@@ -102,7 +121,7 @@ end
 %% 
 
 % Plots
-function plot_results(t, x, ref, U, U_track, U_corrcd)
+function plot_results(t, x, ref, U, U_track, U_corr)
     subplot(4,2,1)
     hold on
     title("trajectory / state")
