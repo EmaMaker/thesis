@@ -1,1 +1,6 @@
 *.asv
+tests**
+results**
+*.mlx
+*.zip
+video.m
