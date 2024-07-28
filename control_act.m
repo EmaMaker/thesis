@@ -1,9 +1,12 @@
 function [u, ut, uc, U_corr_history] = control_act(t, q, sim_data)   
     dc = decouple_matrix(q, sim_data.b);
     ut = utrack(t, q, sim_data);
-
     [uc, U_corr_history] = ucorr(t, q, sim_data);
-    u = dc * (ut + uc);
+
+    ut = dc*ut;
+    uc = dc*uc;
+
+    u = ut+uc;
     % saturation
     u = min(sim_data.SATURATION, max(-sim_data.SATURATION, u));
 end
@@ -14,65 +17,58 @@ function [u_corr, U_corr_history] = ucorr(t, q, sim_data)
     PREDICTION_SATURATION_TOLERANCE = sim_data.PREDICTION_SATURATION_TOLERANCE;
     tc = sim_data.tc;
 
+    u_corr = zeros(2,1);
+    U_corr_history = zeros(2,1,sim_data.PREDICTION_HORIZON);
+
     if eq(pred_hor, 0)
-        u_corr = zeros(2,1);
-        U_corr_history = zeros(2,1,sim_data.PREDICTION_HORIZON);
         return
-    end    
+    end
+    
+    if pred_hor > 1
+        % move the horizon over 1 step and add trailing zeroes
+        U_corr_history = cat(3, sim_data.U_corr_history(:,:, 2:end), zeros(2,1));
+    end
 
     %disp('start of simulation')
-    q_prec = q;
+    q_act = q;
     q_pred=zeros(3,1, pred_hor);
-    u_track_pred=zeros(2,1, pred_hor+1);
-    T_inv_pred=zeros(2,2, pred_hor+1);
+    u_track_pred=zeros(2,1, pred_hor);
+    T_inv_pred=zeros(2,2, pred_hor);
     % for each step in the prediction horizon, integrate the system to
     % predict its future state
 
-    % the first step takes in q_k-1 and calculates q_new = q_k
-    % this means that u_track_pred(:,:,1) will contain u_track_k-1 and will not
-    % contain u_track_k+C
     for k = 1:pred_hor
         % start from the old (known) state
 
-        % calculate the inputs, based on the old state
+        % compute the inputs, based on the old state
 
         % u_corr is the prediction done at some time in the past, as found in U_corr_history
-        u_corr_ = sim_data.U_corr_history(:, :, k);
-        % u_track can be calculated from q
-        t_ = t + tc*(k-1);
-        u_track_ = utrack(t_, q_prec, sim_data);
+        u_corr_ = U_corr_history(:, :, k);
+        % u_track can be computed from q
+        t_ = t + tc * (k-1);
+        u_track_ = utrack(t_, q_act, sim_data);
         
-        T_inv = decouple_matrix(q_prec, sim_data.b);
+        T_inv = decouple_matrix(q_act, sim_data.b);
         u_ = T_inv * (u_corr_ + u_track_);
         
-        % calc the state integrating with euler
-        x_new = q_prec(1) + tc*u_(1) * cos(q_prec(3));
-        y_new = q_prec(2) + tc*u_(1) * sin(q_prec(3));
-        theta_new = q_prec(3) + tc*u_(2);
+        theta_new = q_act(3) + tc*u_(2);
+        % compute the state integrating with euler
+        %x_new = q_act(1) + tc*u_(1) * cos(q_act(3));
+        %y_new = q_act(2) + tc*u_(1) * sin(q_act(3));
+        % compute the state integrating via runge-kutta
+        x_new = q_act(1) + tc*u_(1) * cos(q_act(3) + 0.5*tc*u_(2));
+        y_new = q_act(2) + tc*u_(1) * sin(q_act(3) + 0.5*tc*u_(2));
 
         q_new = [x_new; y_new; theta_new];
 
         % save history
-        q_pred(:,:,k) = q_new;
+        %q_pred(:,:,k) = q_new;
         u_track_pred(:,:,k) = u_track_;
         T_inv_pred(:,:,k) = T_inv;
 
         % Prepare old state for next iteration
-        q_prec = q_new;
+        q_act = q_new;
     end
-
-    %disp('end of simulation')
-    %q_prec
-    
-    % calculate u_track_k+C
-    u_track_pred(:,:,pred_hor+1) = utrack(t+tc*pred_hor, q_prec, sim_data);
-    % remove u_track_k-1
-    u_track_pred = u_track_pred(:,:,2:end);
-
-    T_inv_pred(:,:,pred_hor+1) = decouple_matrix(q_prec, sim_data.b);
-    T_inv_pred = T_inv_pred(:,:,2:end);
-
-    %disp('end of patching data up')
 
     %{
         Now setup the qp problem
@@ -92,12 +88,13 @@ function [u_corr, U_corr_history] = ucorr(t, q, sim_data)
     % box constrains
     % A becomes sort of block-diagonal
     % A will be at most PREDICTION_HORIZON * 2 * 2 (2: size of T_inv; 2:
-    % accounting for T_inv and -T_inv) by PREDICTION_HORIZON*2 (number of
+    % accounting for T_inv and -T_inv) by PREDICTION_HORIZON (number of
     % vectors in u_corr times the number of elements [2] in each vector)
     A_max_elems = pred_hor * 2 * 2;
     A_deq = [];
     b_deq = [];
 
+    s_ = SATURATION - ones(2,1)*PREDICTION_SATURATION_TOLERANCE;
     for k=1:pred_hor
         T_inv = T_inv_pred(:,:,k);
         u_track = u_track_pred(:,:,k);
@@ -111,14 +108,13 @@ function [u_corr, U_corr_history] = ucorr(t, q, sim_data)
         A_deq = [A_deq, column];
 
         d = T_inv*u_track;
-        b_deq = [b_deq; SATURATION - ones(2,1)*PREDICTION_SATURATION_TOLERANCE - d;
-            SATURATION - ones(2,1)*PREDICTION_SATURATION_TOLERANCE + d];
+        b_deq = [b_deq; s_ - d; s_ + d];
     end
     
     %A_deq
     %b_deq
     % unknowns
-    
+   
     % squared norm of u_corr. H must be identity,
     % PREDICTION_HORIZON*size(u_corr)
     H = eye(pred_hor*2)*2;
@@ -131,9 +127,11 @@ function [u_corr, U_corr_history] = ucorr(t, q, sim_data)
 
     % reshape the vector of vectors to be an array, each element being
     % u_corr_j as a 2x1 vector
+    % and add the prediction at t_k+C
     U_corr_history = reshape(U_corr, [2,1,pred_hor]);
     %sim_data.U_corr_history = U_corr_history;
-    u_corr=sim_data.U_corr_history(:,:, 1);
+    % first result is what to do now
+    u_corr=U_corr_history(:,:, 1);
     
 end
 
