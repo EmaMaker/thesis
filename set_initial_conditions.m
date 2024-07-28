@@ -8,5 +8,7 @@ switch i
         q0 = [0; 0; pi/6];
     case 3
         q0 = [1; 0; 0];
+    case 4
+        q0 = [1; 0; -pi/6];
 end
 end

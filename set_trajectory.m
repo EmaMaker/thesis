@@ -41,6 +41,10 @@ switch i
     case 10
         xref = cos(0.5*s);
         yref = 0.5 * sin(s);
+    case 11
+        a = 0.5;
+        xref = 2*a*(1-cos(0.5*s))*sin(0.5*s);
+        yref = 2*a*(1-cos(0.5*s))*cos(0.5*s);
 end
 
 ref = [xref; yref];

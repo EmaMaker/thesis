@@ -15,10 +15,12 @@ for i = 1:s_(2)
     TEST = convertStringsToChars(TESTS(i))
     
     sim_data = load(['tests/' TEST '/common.mat']);
+    
     sim_data.q0 = set_initial_conditions(sim_data.INITIAL_CONDITIONS);
     [ref dref] = set_trajectory(sim_data.TRAJECTORY);
     sim_data.ref = ref;
     sim_data.dref = dref;
+
 
     spmd (3)
         worker_index = spmdIndex;
@@ -33,7 +35,7 @@ for i = 1:s_(2)
         disp('Done')
     end
     
-    h = []
+    h = [];
     s1_ = size(worker_index);
     for n = 1:s1_(2)
         h_ = figure('Name', [TEST ' ' num2str(n)] );
@@ -78,6 +80,10 @@ function [t, q, ref_t, U, U_track, U_corr] = simulate_discr(sim_data)
     U_track = u_track';
     
     for n = 1:steps
+        sim_data.old_u_corr = u_corr;
+        sim_data.old_u_track = u_track;
+        sim_data.old_u = u_discr;
+
         tspan = [(n-1)*tc n*tc];
         z0 = q(end, :);
         
