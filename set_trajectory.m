@@ -42,9 +42,22 @@ switch i
         xref = cos(0.5*s);
         yref = 0.5 * sin(s);
     case 11
+        % cardioid
         a = 0.5;
         xref = 2*a*(1-cos(0.5*s))*sin(0.5*s);
+        %xref = 4*a*(0.2-cos(0.5*s))*sin(0.5*s);
         yref = 2*a*(1-cos(0.5*s))*cos(0.5*s);
+    case 12
+        % square! in parametic form! https://math.stackexchange.com/questions/978486/parametric-form-of-square
+        %speed = 0.3;
+        speed = 0.18;
+        side = 2;
+        s_ = speed * s;
+        %xref = side * cos(s) / max(abs(cos(speed*s)), abs(sin(speed*s))) ;
+        %yref = side * sin(s) / max(abs(cos(speed*s)), abs(sin(speed+s))) ;
+        p = (sqrt(2) * (abs(sin(s_ + pi/4)) + abs(cos(s_ + pi/4))));
+        xref = side * cos(s_) / p;
+        yref = side * sin(s_) / p;
 end
 
 ref = [xref; yref];
