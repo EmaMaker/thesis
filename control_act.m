@@ -1,7 +1,7 @@
-function [u, ut, uc, U_corr_history] = control_act(t, q, sim_data)   
+function [u, ut, uc, U_corr_history, q_pred] = control_act(t, q, sim_data)   
     dc = decouple_matrix(q, sim_data);
     ut = utrack(t, q, sim_data);
-    [uc, U_corr_history] = ucorr(t, q, sim_data);
+    [uc, U_corr_history, q_pred] = ucorr(t, q, sim_data);
 
     ut = dc*ut;
     uc = dc*uc;
@@ -11,7 +11,7 @@ function [u, ut, uc, U_corr_history] = control_act(t, q, sim_data)
     u = min(sim_data.SATURATION, max(-sim_data.SATURATION, u));
 end
 
-function [u_corr, U_corr_history] = ucorr(t, q, sim_data)
+function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
     pred_hor = sim_data.PREDICTION_HORIZON;
     SATURATION = sim_data.SATURATION;
     PREDICTION_SATURATION_TOLERANCE = sim_data.PREDICTION_SATURATION_TOLERANCE;
@@ -19,6 +19,11 @@ function [u_corr, U_corr_history] = ucorr(t, q, sim_data)
 
     u_corr = zeros(2,1);
     U_corr_history = zeros(2,1,sim_data.PREDICTION_HORIZON);
+    q_act = q;
+    u_track_pred=zeros(2,1, pred_hor);
+    T_inv_pred=zeros(2,2, pred_hor);
+
+    q_pred = [];
 
     if eq(pred_hor, 0)
         return
@@ -30,10 +35,6 @@ function [u_corr, U_corr_history] = ucorr(t, q, sim_data)
     end
 
     %disp('start of simulation')
-    q_act = q;
-    q_pred=zeros(3,1, pred_hor);
-    u_track_pred=zeros(2,1, pred_hor);
-    T_inv_pred=zeros(2,2, pred_hor);
     % for each step in the prediction horizon, integrate the system to
     % predict its future state
 
@@ -66,7 +67,7 @@ function [u_corr, U_corr_history] = ucorr(t, q, sim_data)
         q_new = [x_new; y_new; theta_new];
 
         % save history
-        %q_pred(:,:,k) = q_new;
+        q_pred = [q_pred; q_new'];
         u_track_pred(:,:,k) = u_track_;
         T_inv_pred(:,:,k) = T_inv;
 
