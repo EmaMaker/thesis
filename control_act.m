@@ -1,5 +1,5 @@
 function [u, ut, uc, U_corr_history] = control_act(t, q, sim_data)   
-    dc = decouple_matrix(q, sim_data.b);
+    dc = decouple_matrix(q, sim_data);
     ut = utrack(t, q, sim_data);
     [uc, U_corr_history] = ucorr(t, q, sim_data);
 
@@ -48,9 +48,13 @@ function [u_corr, U_corr_history] = ucorr(t, q, sim_data)
         t_ = t + tc * (k-1);
         u_track_ = utrack(t_, q_act, sim_data);
         
-        T_inv = decouple_matrix(q_act, sim_data.b);
+        T_inv = decouple_matrix(q_act, sim_data);
+        % compute inputs (wr, wl)
         u_ = T_inv * (u_corr_ + u_track_);
-        
+        % map (wr, wl) to (v, w) for unicicle
+        u_ = diffdrive_to_uni(u_, sim_data);
+
+        % integrate unicycle
         theta_new = q_act(3) + tc*u_(2);
         % compute the state integrating with euler
         %x_new = q_act(1) + tc*u_(1) * cos(q_act(3));
@@ -148,11 +152,21 @@ function q_track = feedback(q, b)
     q_track = [q(1) + b*cos(q(3)); q(2) + b*sin(q(3))  ];
 end
 
-function T_inv = decouple_matrix(q, b)
+function T_inv = decouple_matrix(q, sim_data)
     theta = q(3);
+
     st = sin(theta);
     ct = cos(theta);
-    T_inv = [ct, st; -st/b, ct/b];
+    
+    b = sim_data.b;
+    r = sim_data.r;
+    d = sim_data.d;
+    %a1 = sim_data.r*0.5;
+    %a2 = sim_data.b*sim_data.r/sim_data.d;
+    %det_inv = -sim_data.d/(sim_data.b*sim_data.r*sim_data.r);0
+    %T_inv = det_inv * [ a1*st - a2*ct, -a1*ct - a2*st;-a1*st-a2*ct , a1*ct - a2*st];
+
+    T_inv = [2*b*ct - d*st, d*ct + 2*b*st ; 2*b*ct + d*st, -d*ct+2*b*st] / (2*b*r);
 end
 
 
