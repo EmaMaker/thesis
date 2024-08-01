@@ -19,9 +19,9 @@ for i = 1:s_(1)
     sim_data.tfin=15
 
     sim_data.r=0.08;
-    sim_data.b=0.2;
+    sim_data.b=0.12;
     sim_data.d=0.15;
-    sim_data.SATURATION=[2.15;2.15];
+    sim_data.SATURATION=[2.85;2.85];
 
     sim_data.q0 = set_initial_conditions(sim_data.INITIAL_CONDITIONS);
     [ref dref] = set_trajectory(sim_data.TRAJECTORY);
