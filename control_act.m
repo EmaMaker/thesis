@@ -122,19 +122,19 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
    
     % squared norm of u_corr. H must be identity,
     % PREDICTION_HORIZON*size(u_corr)
-    H = eye(pred_hor*2)*2;
+    H = eye(pred_hor*2);
     % no linear terms
     f = zeros(pred_hor*2, 1);
 
     % solve qp problem
     options = optimoptions('quadprog', 'Display', 'off');
     U_corr = quadprog(H, f, A_deq, b_deq, [],[],[],[],[],options);
+    %U_corr = lsqnonlin(@(pred_hor) ones(pred_hor, 1), U_corr_history(:,:,1), [], [], A_deq, b_deq, [], []);
 
     % reshape the vector of vectors to be an array, each element being
     % u_corr_j as a 2x1 vector
     % and add the prediction at t_k+C
     U_corr_history = reshape(U_corr, [2,1,pred_hor]);
-    %sim_data.U_corr_history = U_corr_history;
     % first result is what to do now
     u_corr=U_corr_history(:,:, 1);
     

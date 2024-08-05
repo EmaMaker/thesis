@@ -1,5 +1,5 @@
 *.asv
-tests**
+tests-old**
 results**
 *.mlx
 *.zip

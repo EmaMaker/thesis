@@ -12,5 +12,13 @@ switch i
         q0 = [1; 0; -pi/6];
     case 5
         q0 = [1; 0; pi/2];
+    case 6
+        q0 = [0; 0.5; 0];
+    case 7
+        q0 = [0.75; 0; pi/2];
+    case 8
+        q0 = [0;0;pi/2];
+    case 9
+        q0 = [2.5; 0; pi/2];
 end
 end

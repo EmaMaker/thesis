@@ -3,34 +3,32 @@ clear all
 close all
 
 %TESTS = ["sin_faster", "sin", "circle", "straightline", "reverse_straightline"]
-TESTS = ["square"]
+TESTS = ["straightline/backandforth"]
 
 s_ = size(TESTS);
 
 for i = 1:s_(1)    
     clear data sim_data
-    close all
+    close all 
     
-%for i = 1:1
+    sim_data = load(["tests/robot_common.mat"]);
+
     TEST = convertStringsToChars(TESTS(i))
     
-    sim_data = load(['tests/' TEST '/common.mat']);
     
-    sim_data.tfin=15
-
-    sim_data.r=0.08;
-    sim_data.b=0.12;
-    sim_data.d=0.15;
-    sim_data.SATURATION=[2.85;2.85];
+    test_data = load(['tests/' TEST '/common.mat']);
+    for fn = fieldnames(test_data)'
+        sim_data.(fn{1}) = test_data.(fn{1});
+    end
 
     sim_data.q0 = set_initial_conditions(sim_data.INITIAL_CONDITIONS);
-    [ref dref] = set_trajectory(sim_data.TRAJECTORY);
+    [ref dref] = set_trajectory(sim_data.TRAJECTORY, sim_data);
     sim_data.ref = ref;
     sim_data.dref = dref;
-    
+
     spmd (3)
         worker_index = spmdIndex;
-        data = load(['tests/' TEST '/' num2str(worker_index) '.mat']);
+        data = load(['tests/' num2str(worker_index) '.mat']);
     
         for fn = fieldnames(data)'
             sim_data.(fn{1}) = data.(fn{1});
@@ -39,7 +37,7 @@ for i = 1:s_(1)
         sim_data.U_corr_history = zeros(2,1,sim_data.PREDICTION_HORIZON);
         sim_data
 
-        [t, q, ref_t, U, U_track, U_corr, Q_pred] = simulate_discr(sim_data);
+        [t, q, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = simulate_discr(sim_data);
     
         disp('Done')
     end
@@ -51,10 +49,10 @@ for i = 1:s_(1)
         plot_results(t{n}, q{n}, ref_t{n}, U{n}, U_track{n}, U_corr{n});
     end
 
-    f1 = [ TEST '-'  datestr(datetime)];
+    f1 = [ TEST '/'  datestr(datetime)];
     f = ['results/' f1];
     mkdir(f)
-    savefig(h, [f '/' f1 '.fig']);
+    savefig(h, [f '/figure.fig']);
 
     clear h
     dsave([f '/workspace_composite.mat']);
@@ -70,13 +68,14 @@ end
 %% FUNCTION DECLARATIONS
 
 % Discrete-time simulation
-function [t, q, ref_t, U, U_track, U_corr, Q_pred] = simulate_discr(sim_data)
+function [t, q, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = simulate_discr(sim_data)
     tc = sim_data.tc;
     steps = sim_data.tfin/tc
     
     q = sim_data.q0';
     t = 0;
     Q_pred = zeros(sim_data.PREDICTION_HORIZON,3,sim_data.tfin/sim_data.tc + 1);
+    U_corr_pred_history=zeros(sim_data.PREDICTION_HORIZON,2,steps);
 
     [u_discr, u_track, u_corr, U_corr_history, q_pred] = control_act(t, q, sim_data);
     sim_data.U_corr_history = U_corr_history;
@@ -105,6 +104,8 @@ function [t, q, ref_t, U, U_track, U_corr, Q_pred] = simulate_discr(sim_data)
         U_corr = [U_corr; ones(length(v), 1)*u_corr'];
         U_track = [U_track; ones(length(v), 1)*u_track'];
         Q_pred(:, :, 1+n) = q_pred;
+	
+	U_corr_pred_history(:,:,n) = permute(U_corr_history, [3, 1, 2]);
     end
 
     ref_t = double(subs(sim_data.ref, t'))';
@@ -126,32 +127,32 @@ function plot_results(t, x, ref, U, U_track, U_corr)
     subplot(4,2,3)
     plot(t, U(:, 1))
     xlabel('t')
-    ylabel('input wr')
+    ylabel('input w_r')
     subplot(4,2,4)
     plot(t, U(:, 2))
     xlabel('t')
-    ylabel('input wl')
+    ylabel('input w_l')
     hold off
 
     subplot(4,2,5)
     plot(t, U_corr(:, 1))
     xlabel('t')
-    ylabel('correction input wr')
+    ylabel('correction input w_r')
     subplot(4,2,6)
     plot(t, U_corr(:, 2))
     xlabel('t')
-    ylabel('correction input wl')
+    ylabel('correction input w_l')
     
     
     subplot(4,2,7)
     plot(t, U_track(:, 1))
     xlabel('t')
-    ylabel('tracking input wr')
+    ylabel('tracking input w_r')
     subplot(4,2,8)
     plot(t, U_track(:, 2))
     xlabel('t')
 
-    ylabel('tracking input wl')
+    ylabel('tracking input w_l')
     
     ex = ref(:, 1) - x(:, 1);
     ey = ref(:, 2) - x(:, 2);
