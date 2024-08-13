@@ -3,7 +3,7 @@ clear all
 close all
 
 %TESTS = ["sin_faster", "sin", "circle", "straightline", "reverse_straightline"]
-TESTS = ["straightline/backandforth"]
+TESTS = ["figure8/fancyreps"]
 
 s_ = size(TESTS);
 
@@ -53,6 +53,16 @@ for i = 1:s_(1)
     f = ['results/' f1];
     mkdir(f)
     savefig(h, [f '/figure.fig']);
+
+    h = [h, figure('Name', 'difference between 1step and multistep')]
+    subplot(2,1,1)
+    plot(t{2}, U_corr{2}(:, 1) - U_corr{3}(:, 1))
+    xlabel('t')
+    ylabel('difference on w_r between 1-step and multistep')
+    subplot(2,1,2)
+    plot(t{2}, U_corr{2}(:, 2) - U_corr{3}(:, 2))
+    xlabel('t')
+    ylabel('difference on w_l between 1-step and multistep')
 
     clear h
     dsave([f '/workspace_composite.mat']);
@@ -112,83 +122,3 @@ function [t, q, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = simula
 end
 
 %% 
-
-% Plots
-function plot_results(t, x, ref, U, U_track, U_corr)
-    subplot(4,2,1)
-    hold on
-    title("trajectory / state")
-    plot(ref(:, 1), ref(:, 2), "DisplayName", "Ref")
-    plot(x(:, 1), x(:, 2), "DisplayName", "state")
-    rectangle('Position', [x(1,1)-0.075, x(1,2)-0.075, 0.15, 0.15], 'Curvature', [1,1])
-    xlabel('x')
-    ylabel('y')
-    legend()
-    subplot(4,2,3)
-    plot(t, U(:, 1))
-    xlabel('t')
-    ylabel('input w_r')
-    subplot(4,2,4)
-    plot(t, U(:, 2))
-    xlabel('t')
-    ylabel('input w_l')
-    hold off
-
-    subplot(4,2,5)
-    plot(t, U_corr(:, 1))
-    xlabel('t')
-    ylabel('correction input w_r')
-    subplot(4,2,6)
-    plot(t, U_corr(:, 2))
-    xlabel('t')
-    ylabel('correction input w_l')
-    
-    
-    subplot(4,2,7)
-    plot(t, U_track(:, 1))
-    xlabel('t')
-    ylabel('tracking input w_r')
-    subplot(4,2,8)
-    plot(t, U_track(:, 2))
-    xlabel('t')
-
-    ylabel('tracking input w_l')
-    
-    ex = ref(:, 1) - x(:, 1);
-    ey = ref(:, 2) - x(:, 2);
-    
-    subplot(8,8,5)
-    hold on
-    xlabel('t')
-    ylabel('x')
-    plot(t, ref(:, 1), "DisplayName", "X_{ref}");
-    plot(t, x(:, 1), "DisplayName", "X");
-    legend()
-    hold off
-    
-    subplot(8,8,6)
-    plot(t, ex);
-    xlabel('t')
-    ylabel('x error')
-    
-    subplot(8,8,13)
-    hold on
-    xlabel('t')
-    ylabel('y')
-    plot(t, ref(:, 2), "DisplayName", "Y_{ref}");
-    plot(t, x(:, 2), "DisplayName", "Y");
-    legend()
-    hold off
-    
-    subplot(8,8,14)
-    plot(t, ey);
-    xlabel('t')
-    ylabel('y error')
-
-    subplot(4, 4, 4);
-    error_norm = sqrt(ex.*ex + ey.*ey);
-    plot(t, error_norm );
-    xlabel("t")
-    ylabel("error norm")
-   
-end

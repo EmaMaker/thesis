@@ -1,5 +1,5 @@
 TEST = 'cardioid'
-CONTROLLER = 2
+CONTROLLER = 3
 
 
 sim_data = load(['tests/' TEST '/common.mat']);
