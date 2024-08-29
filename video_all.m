@@ -5,23 +5,23 @@ disp('Waiting 5s')
 pause(1)
 
 PLOT_TESTS = [
-    "results/straightline/chill/01-Aug-2024 15:34:03";
-    "results/straightline/chill_errortheta_pisixths/01-Aug-2024 15:56:36";
-    "results/square/01-Aug-2024 16:18:51";
-    "results/circle/start_center/01-Aug-2024 16:46:41";
-    "results/circle/start_tangent/01-Aug-2024 16:55:09";
-    "results/circle/toofast/01-Aug-2024 17:35:25"
-    "results/straightline/toofast/01-Aug-2024 15:37:48"
-    "results/figure8/chill/15-Aug-2024 09:16:21";
-    "results/figure8/toofast/15-Aug-2024 09:10:32";
-    "results/straightline/abrupt_stop_chill/27-Aug-2024 10:27:31";
-    "results/straightline/abrupt_stop_toofast/27-Aug-2024 10:44:35"
-    "results/cardioid/start_tangent/01-Aug-2024 18:53:41";
-    "results/figure8/fancyreps/09-Aug-2024 13:04:44";
-    "results/sin/no_start_error/27-Aug-2024 19:28:17";
-    "results/sin/no_start_error/27-Aug-2024 19:29:42";
-    "results/sin/no_start_error/27-Aug-2024 19:31:17";
-    "results/sin/no_start_error/27-Aug-2024 19:38:03"
+    "results-diffdrive/straightline/chill/01-Aug-2024 15:34:03";
+    "results-diffdrive/straightline/chill_errortheta_pisixths/01-Aug-2024 15:56:36";
+    "results-diffdrive/square/01-Aug-2024 16:18:51";
+    "results-diffdrive/circle/start_center/01-Aug-2024 16:46:41";
+    "results-diffdrive/circle/start_tangent/01-Aug-2024 16:55:09";
+    "results-diffdrive/circle/toofast/01-Aug-2024 17:35:25"
+    "results-diffdrive/straightline/toofast/01-Aug-2024 15:37:48"
+    "results-diffdrive/figure8/chill/15-Aug-2024 09:16:21";
+    "results-diffdrive/figure8/toofast/15-Aug-2024 09:10:32";
+    "results-diffdrive/straightline/abrupt_stop_chill/27-Aug-2024 10:27:31";
+    "results-diffdrive/straightline/abrupt_stop_toofast/27-Aug-2024 10:44:35"
+    "results-diffdrive/cardioid/start_tangent/01-Aug-2024 18:53:41";
+    "results-diffdrive/figure8/fancyreps/09-Aug-2024 13:04:44";
+    "results-diffdrive/sin/no_start_error/27-Aug-2024 19:28:17";
+    "results-diffdrive/sin/no_start_error/27-Aug-2024 19:29:42";
+    "results-diffdrive/sin/no_start_error/27-Aug-2024 19:31:17";
+    "results-diffdrive/sin/no_start_error/27-Aug-2024 19:38:03"
 
     ]
 
@@ -33,7 +33,7 @@ for i = 1:s_(1)
     PLOT_TEST = [sPLOT_TEST, '/workspace_composite.mat']
     load(PLOT_TEST)
 
-    dir = ['gifs/', sPLOT_TEST, '/']
+    dir = ['gifs-diffdrive/', sPLOT_TEST, '/']
     mkdir(dir);
 
     close all; pause(2); video(q{1}', ref_t{1}', Q_pred{1}, U_track{1}, U_corr{1}, 0, 0.12, t{1}, 4, sim_data{1}.tc*0.25, "track only");

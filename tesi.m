@@ -50,7 +50,7 @@ for i = 1:s_(1)
     end
 
     f1 = [ TEST '/'  datestr(datetime)];
-    f = ['results/' f1];
+    f = ['results-diffdrive/' f1];
     mkdir(f)
     savefig(h, [f '/figure.fig']);
 
