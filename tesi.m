@@ -49,7 +49,8 @@ for i = 1:s_(1)
         plot_results(t{n}, q{n}, ref_t{n}, U{n}, U_track{n}, U_corr{n});
     end
 
-    f1 = [ TEST '/'  datestr(datetime)];
+    % windows compatible
+    f1 = [ TEST '/'  char(datetime, 'dd-MM-yyyy HH-mm-ss')];
     f = ['results-diffdrive/' f1];
     mkdir(f)
     savefig(h, [f '/figure.fig']);
