@@ -5,21 +5,21 @@ disp('Waiting 5s')
 pause(1)
 
 PLOT_TESTS = [
-    "results-diffdrive/straightline/chill/01-Aug-2024 15-34-03";
-    "results-diffdrive/straightline/chill_errortheta_pisixths/01-Aug-2024 15-56-36";
-    "results-diffdrive/square/01-Aug-2024 16-18-51";
-    "results-diffdrive/circle/start_center/01-Aug-2024 16-46-41";
-    "results-diffdrive/circle/start_tangent/01-Aug-2024 16-55-09";
-    "results-diffdrive/circle/toofast/01-Aug-2024 17-35-25";
-    "results-diffdrive/straightline/toofast/01-Aug-2024 15-37-48";
-    "results-diffdrive/figure8/chill/15-Aug-2024 09-16-21";
-    "results-diffdrive/figure8/toofast/15-Aug-2024 09-10-32";
-    "results-diffdrive/straightline/abrupt_stop_chill/27-Aug-2024 10-27-31";
-    "results-diffdrive/straightline/abrupt_stop_toofast/27-Aug-2024 10-44-35";
-    "results-diffdrive/sin/no_start_error/27-Aug-2024 19-28-17";
-    "results-diffdrive/sin/no_start_error/27-Aug-2024 19-29-42";
-    "results-diffdrive/sin/no_start_error/27-Aug-2024 19-31-17";
-    "results-diffdrive/sin/no_start_error/27-Aug-2024 19-38-03";
+    % "results-diffdrive/straightline/chill/01-Aug-2024 15-34-03";
+    % "results-diffdrive/straightline/chill_errortheta_pisixths/01-Aug-2024 15-56-36";
+    % "results-diffdrive/square/01-Aug-2024 16-18-51";
+    % "results-diffdrive/circle/start_center/01-Aug-2024 16-46-41";
+    % "results-diffdrive/circle/start_tangent/01-Aug-2024 16-55-09";
+    % "results-diffdrive/circle/toofast/01-Aug-2024 17-35-25";
+    % "results-diffdrive/straightline/toofast/01-Aug-2024 15-37-48";
+    % "results-diffdrive/figure8/chill/15-Aug-2024 09-16-21";
+    % "results-diffdrive/figure8/toofast/15-Aug-2024 09-10-32";
+    "results-diffdrive/straightline/abrupt_stop_chill/27-Aug-2024 10-15-43";
+    % "results-diffdrive/straightline/abrupt_stop_toofast/27-Aug-2024 10-44-35";
+    % "results-diffdrive/sin/no_start_error/27-Aug-2024 19-28-17";
+    % "results-diffdrive/sin/no_start_error/27-Aug-2024 19-29-42";
+    % "results-diffdrive/sin/no_start_error/27-Aug-2024 19-31-17";
+    % "results-diffdrive/sin/no_start_error/27-Aug-2024 19-38-03";
     ]
 
 s_ = size(PLOT_TESTS)
