@@ -5,10 +5,10 @@ function plot_error(t,ref,x)
     ey = ref(:, 2) - x(:, 2);
 
     error_norm = sqrt(ex.*ex + ey.*ey);
-    plot(t, error_norm, 'Linewidth', 5, 'DisplayName', 'norm of error');
+    plot(t, error_norm, 'Linewidth', 5, 'DisplayName', 'norm of error [m]');
 
     avg = ones(1, length(error_norm)) * error_norm / length(error_norm);
-    plot(t, avg*ones(1, length(error_norm)), 'DisplayName', 'average error', 'LineWidth', 3);
+    plot(t, avg*ones(1, length(error_norm)), 'DisplayName', 'average error [m]', 'LineWidth', 3);
 
     Axes = gca;
     Axes.FontSize=18;
@@ -18,7 +18,7 @@ function plot_error(t,ref,x)
     
     legend('FontSize', 12, 'Location', 'northeast', 'AutoUpdate','off')
     xlabel("\textbf{t [s]}", FontSize=18, Interpreter="latex")
-    ylabel("\textbf{norm of error [m]}", FontSize=18, Interpreter="latex")
+    ylabel("\textbf{tracking error}", FontSize=18, Interpreter="latex")
 
     hold off
 end
