@@ -35,6 +35,8 @@ for i = 1:s_(1)
 
     dir = ['images-diffdrive/', sPLOT_TEST, '/']
     mkdir(dir);
+    
+    %{
     for n=1:3
         clf; plot_trajectory(t{n}, ref_t{n}, q{n})
         export_fig(gcf, '-transparent', [dir, num2str(n), '_trajectory.eps'])
@@ -61,11 +63,24 @@ for i = 1:s_(1)
         %export_fig(gcf, '-transparent', [dir, num2str(n), '_total_input.eps'])
         %print([dir, num2str(n), '_total_input.png'], '-dpng')
     end
+    %}
 
-    clf; plot_input_diff(t{3}, U_corr{3}, U_corr{2},0)
-    export_fig(gcf, '-transparent', [dir, num2str(n), 'corr_input_diff_1x2.eps'])
-    %print([dir, 'corr_input_diff_1x2.png'], '-dpng')
-    clf; plot_input_diff(t{3}, U_corr{3}, U_corr{2},1)
-    export_fig(gcf, '-transparent', [dir, num2str(n), 'corr_input_diff_2x1.eps'])
-    %print([dir, 'corr_input_diff_2x1.png'], '-dpng')
+    % correction difference (multistep, 1-step)
+    clf; plot_input_diff(t{3}, t{2}, U_corr{3}, U_corr{2}, 0, '\textbf{$$\omega_r^{corr, multistep}$$}', '\textbf{$$\omega_r^{corr, 1step}$$}', '\textbf{$$\omega_l^{corr, multistep}$$}', '\textbf{$$\omega_l^{corr, 1step}$$}')
+    export_fig(gcf, '-transparent', [dir, 'corr_input_diff_1x2.eps'])
+    clf; plot_input_diff(t{3}, t{2}, U_corr{3}, U_corr{2}, 1, '\textbf{$$\omega_r^{corr, multistep}$$}', '\textbf{$$\omega_r^{corr, 1step}$$}', '\textbf{$$\omega_l^{corr, multistep}$$}', '\textbf{$$\omega_l^{corr, 1step}$$}')
+    export_fig(gcf, '-transparent', [dir, 'corr_input_diff_2x1.eps'])
+
+    % input difference (saturated track only, 1step)
+    clf; plot_input_diff(t{1}, t{2}, U{1}, U{2}, 0, '\textbf{$$\omega_r^{trackonly-sat}$$}', '\textbf{$$\omega_r^{1step}$$}', '\textbf{$$\omega_l^{trackonly-sat}$$}', '\textbf{$$\omega_l^{1step}$$}')
+    export_fig(gcf, '-transparent', [dir, 'input_diff_track_1step_1x2.eps'])
+    clf; plot_input_diff(t{1}, t{2}, U{1}, U{2}, 1, '\textbf{$$\omega_r^{trackonly-sat}$$}', '\textbf{$$\omega_r^{1step}$$}', '\textbf{$$\omega_l^{trackonly-sat}$$}', '\textbf{$$\omega_l^{1step}$$}')
+    export_fig(gcf, '-transparent', [dir, 'input_diff_track_1step_2x1.eps'])
+
+    % input difference (saturated track only, multistep)
+    clf; plot_input_diff(t{2}, t{3}, U{2}, U{3}, 0, '\textbf{$$\omega_r^{1step}$$}', '\textbf{$$\omega_r^{multistep}$$}', '\textbf{$$\omega_l^{1step}$$}', '\textbf{$$\omega_l^{multistep}$$}')
+    export_fig(gcf, '-transparent', [dir, 'input_diff_1step_multistep_1x2.eps'])
+    clf; plot_input_diff(t{2}, t{3}, U{2}, U{3}, 1, '\textbf{$$\omega_r^{1step}$$}', '\textbf{$$\omega_r^{multistep}$$}', '\textbf{$$\omega_l^{1step}$$}', '\textbf{$$\omega_l^{multistep}$$}')
+    export_fig(gcf, '-transparent', [dir, 'input_diff_1step_multistep_2x1.eps'])
+
 end

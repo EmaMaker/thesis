@@ -1,4 +1,16 @@
-function plot_input(t, U_corr1, U_corr2, type)
+function plot_input_diff(t1, t2, U_corr1, U_corr2, type, name1_1, name1_2, name2_1, name2_2)
+
+l1 = length(U_corr1);
+l2 = length(U_corr2)
+
+t = t1;
+if l1 > l2
+    U_corr1 = U_corr1(1:l2, :);
+    t = t2;
+elseif l2 > l1
+    U_corr2 = U_corr2(1:l1, :);
+    t = t1;
+end
 
 tiledlayout(1,1,'Padding','tight', 'TileSpacing','compact')
 nexttile
@@ -10,7 +22,7 @@ subplot(2,1,1);
 end
 plot(t, U_corr1(:, 1) - U_corr2(:,1), 'Linewidth', 5);
 xlabel('\textbf{t[s]}', 'FontSize', 24, 'Interpreter','latex');
-ylabel('\textbf{$$\omega_r^{corr, multistep}$$} - \textbf{$$\omega_r^{corr, 1step}$$ [rad/s]}', 'FontSize', 18, 'Interpreter','latex');
+ylabel([name1_1 '-' name1_2], 'FontSize', 18, 'Interpreter','latex');
 
 Axes = gca;
 Axes.FontSize=18;
@@ -26,7 +38,7 @@ subplot(2,1,2);
 end
 plot(t, U_corr1(:, 2) - U_corr2(:,2), 'Linewidth', 5);
 xlabel('\textbf{t[s]}', 'FontSize', 24, 'Interpreter','latex');
-ylabel('\textbf{$$\omega_l^{corr, multistep}$$} - \textbf{$$\omega_l^{corr, 1step}$$ [rad/s]}', 'FontSize', 18, 'Interpreter','latex');
+ylabel([name2_1 '-' name2_2], 'FontSize', 18, 'Interpreter','latex');
 
 Axes = gca;
 Axes.FontSize=18;
