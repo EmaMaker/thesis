@@ -5,20 +5,20 @@ function plot_error(t,ref,x)
     ey = ref(:, 2) - x(:, 2);
 
     error_norm = sqrt(ex.*ex + ey.*ey);
-    plot(t, error_norm, 'Linewidth', 5, 'DisplayName', 'norm of error [m]');
+    plot(t, error_norm, 'Linewidth', 8, 'DisplayName', 'norm of error [m]');
 
     avg = ones(1, length(error_norm)) * error_norm / length(error_norm);
-    plot(t, avg*ones(1, length(error_norm)), 'DisplayName', 'average error [m]', 'LineWidth', 3);
+    plot(t, avg*ones(1, length(error_norm)), 'DisplayName', 'average error [m]', 'LineWidth', 4);
 
     Axes = gca;
-    Axes.FontSize=18;
+    Axes.FontSize=22;
     Axes.FontWeight='bold';
     Axes.PlotBoxAspectRatio = [1 1 1];
     grid minor;
     
-    legend('FontSize', 12, 'Location', 'northeast', 'AutoUpdate','off')
-    xlabel("\textbf{t [s]}", FontSize=18, Interpreter="latex")
-    ylabel("\textbf{tracking error}", FontSize=18, Interpreter="latex")
+    legend('FontSize', 22, 'Location', 'northeast', 'AutoUpdate','off')
+    xlabel("\textbf{t [s]}", FontSize=22, Interpreter="latex")
+    ylabel("\textbf{tracking error}", FontSize=22, Interpreter="latex")
 
     hold off
 end

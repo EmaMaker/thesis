@@ -21,11 +21,11 @@ else
 subplot(2,1,1);
 end
 plot(t, U_corr1(:, 1) - U_corr2(:,1), 'Linewidth', 5);
-xlabel('\textbf{t[s]}', 'FontSize', 24, 'Interpreter','latex');
-ylabel([name1_1 '-' name1_2], 'FontSize', 18, 'Interpreter','latex');
+xlabel('\textbf{t[s]}', 'Interpreter','latex');
+ylabel([name1_1 '-' name1_2], 'Interpreter','latex');
 
 Axes = gca;
-Axes.FontSize=18;
+Axes.FontSize=26;
 Axes.FontWeight='bold';
 grid minor;
 Axes.PlotBoxAspectRatio = [1 1 1];
@@ -37,11 +37,11 @@ else
 subplot(2,1,2);
 end
 plot(t, U_corr1(:, 2) - U_corr2(:,2), 'Linewidth', 5);
-xlabel('\textbf{t[s]}', 'FontSize', 24, 'Interpreter','latex');
-ylabel([name2_1 '-' name2_2], 'FontSize', 18, 'Interpreter','latex');
+xlabel('\textbf{t[s]}', 'Interpreter','latex');
+ylabel([name2_1 '-' name2_2], 'Interpreter','latex');
 
 Axes = gca;
-Axes.FontSize=18;
+Axes.FontSize=26;
 Axes.FontWeight='bold';
 grid minor;
 Axes.PlotBoxAspectRatio = [1 1 1];
