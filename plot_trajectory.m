@@ -14,17 +14,18 @@ function tl = plot_trajectory(t, ref, x)
     %plot(x(:, 1), x(:, 2), "DisplayName", "Robot position", 'Color', 'green', 'Linewidth', 6);
     [x_arr, y_arr] = arrowed_line(x(:, 1), x(:, 2), 600, 50, 50);
     plot(x_arr, y_arr, "DisplayName", "Robot position", 'Color', 'green', 'Linewidth', 4);
-    labelpoints(x(label_interval, 1), x(label_interval, 2), labels, 'N', 0.3, 'FontWeight', 'bold', 'FontSize', 15);
+    labelpoints(x(label_interval, 1), x(label_interval, 2), labels, 'N', 0.3, 'FontWeight', 'bold', 'FontSize', 15, 'Color', 'k', 'BackgroundColor', 'w');
 
     Axes = gca;
-    Axes.FontSize=18;
+    Axes.FontSize=22;
     Axes.FontWeight='bold';
+    Axes.PlotBoxAspectRatio = [1 1 1];
 
-    xlabel('\textbf{x [m]}', 'FontSize', 18, 'Interpreter', 'latex');
-    ylabel('\textbf{y [m]}', 'FontSize', 18, 'Interpreter', 'latex');
-    legend('FontSize', 12, 'Location', 'southeast', 'AutoUpdate','off')
+    xlabel('\textbf{x [m]}', 'Interpreter', 'latex');
+    ylabel('\textbf{y [m]}', 'Interpreter', 'latex');
+    legend('FontSize', 22, 'Location', 'southeast', 'AutoUpdate','off')
 
-
+    %{
     xlim = Axes.XLim;
     ylim = Axes.YLim;
     xl = xlim(2) - xlim(1);
@@ -37,6 +38,7 @@ function tl = plot_trajectory(t, ref, x)
     Axes.PlotBoxAspectRatio = [1 1 1];
     Axes.Units='normalized' 
     Axes.OuterPosition = [0 0 1.25 1.25];
+    %}
 
 
     hold off
