@@ -39,7 +39,7 @@ for i = 1:s_(1)
         sim_data.U_corr_history = zeros(2,1,sim_data.PREDICTION_HORIZON);
         sim_data
 
-        [t, q, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = simulate_discr(sim_data);
+        [t, q, y, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = simulate_discr(sim_data);
     
         disp('Done')
     end
@@ -83,7 +83,7 @@ end
 %% FUNCTION DECLARATIONS
 
 % Discrete-time simulation
-function [t, q, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = simulate_discr(sim_data)
+function [t, q, y, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = simulate_discr(sim_data)
     tc = sim_data.tc;
     steps = sim_data.tfin/tc
     
