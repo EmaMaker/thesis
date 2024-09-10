@@ -3,7 +3,7 @@ clear all
 close all
 
 %TESTS = ["sin_faster", "sin", "circle", "straightline", "reverse_straightline"]
-TESTS = ["circle/start_center"]
+TESTS = ["straightline/chill", "straightline/chill_errortheta_pisixths", "straightline/toofast", "straightline/chill_errory", "circle/start_center", "figure8/chill", "figure8/toofast", "square"]
 
 s_ = size(TESTS);
 
@@ -44,20 +44,25 @@ for i = 1:s_(1)
         disp('Done')
     end
     
+    % save simulation data
+    f1 = [ TEST '/'  char(datetime, 'dd-MM-yyyy-HH-mm-ss')]; % windows compatible
+    f = ['results-diffdrive/' f1];
+    mkdir(f)
+    % save workspace
+    dsave([f '/workspace_composite.mat']);
+    % save test file
+    copyfile(['tests/' TEST], f);
+    
+    % save figures + plot results
     h = [];
+    % plot results
     s1_ = size(worker_index);
     for n = 1:s1_(2)
         h = [h, figure('Name', [TEST ' ' num2str(n)] )];
         plot_results(t{n}, q{n}, ref_t{n}, U{n}, U_track{n}, U_corr{n});
     end
-
-    % windows compatible
-    f1 = [ TEST '/'  char(datetime, 'dd-MM-yyyy HH-mm-ss')];
-    f = ['results-diffdrive/' f1];
-    mkdir(f)
-    savefig(h, [f '/figure.fig']);
-
-    h = [h, figure('Name', 'difference between 1step and multistep')]
+    % plot correction different between 1-step and multistep
+    h = [h, figure('Name', 'difference between 1step and multistep')];
     subplot(2,1,1)
     plot(t{2}, U_corr{2}(:, 1) - U_corr{3}(:, 1))
     xlabel('t')
@@ -66,11 +71,8 @@ for i = 1:s_(1)
     plot(t{2}, U_corr{2}(:, 2) - U_corr{3}(:, 2))
     xlabel('t')
     ylabel('difference on w_l between 1-step and multistep')
-
-    clear h
-    dsave([f '/workspace_composite.mat']);
-
-    copyfile(['tests/' TEST], f);
+    % save figures
+    savefig(h, [f '/figure.fig']);
 
     %video(q{1}', ref_t{1}', 0.1, t{1}, 2, sim_data{1}.tc*0.05, "aa");
     %video(q{2}', ref_t{2}', 0.1, t{2}, 2, sim_data{1}.tc*0.05, "aa");
@@ -112,8 +114,7 @@ function [t, q, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = simula
 
         q = [q; z];
         t = [t; v];
-        
-        
+                
         [u_discr, u_track, u_corr, U_corr_history, q_pred] = control_act(t(end), q(end, :), sim_data);
         sim_data.U_corr_history = U_corr_history;
         U = [U; ones(length(v), 1)*u_discr'];
