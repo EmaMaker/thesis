@@ -39,7 +39,9 @@ for i = 1:s_(1)
         sim_data.U_corr_history = zeros(2,1,sim_data.PREDICTION_HORIZON);
         sim_data
 
+        tic;
         [t, q, y, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = simulate_discr(sim_data);
+        toc;
     
         disp('Done')
     end
