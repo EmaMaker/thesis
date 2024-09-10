@@ -4,7 +4,7 @@ function [u, ut, uc, U_corr_history, q_pred] = control_act(t, q, sim_data)
     [uc, U_corr_history, q_pred] = ucorr(t, q, sim_data);
 
     ut = dc*ut;
-    uc = dc*uc;
+    %uc = dc*uc;
     %uc = zeros(2,1);
 
     u = ut+uc;
@@ -34,7 +34,8 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
         f = zeros(2,1);
         T_inv = decouple_matrix(q_act, sim_data);
         ut = utrack(t, q_act, sim_data);
-        A = [T_inv; -T_inv];        
+        %A = [T_inv; -T_inv];        
+        A = [eye(2); -eye(2)];
 
         d = T_inv*ut;
         b = [s_-d;s_+d];
@@ -69,7 +70,7 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
             
             T_inv = decouple_matrix(q_act, sim_data);
             % compute inputs (wr, wl)
-            u_ = T_inv * (u_corr_ + u_track_);
+            u_ = T_inv * u_track_ + u_corr_;
             % map (wr, wl) to (v, w) for unicicle
             u_ = diffdrive_to_uni(u_, sim_data);
     
@@ -122,7 +123,9 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
             u_track = u_track_pred(:,:,k);
     
             % [T_inv; -T_inv] is a 4x2 matrix
-            A_deq = blkdiag(A_deq, [T_inv; -T_inv]);
+            %A_deq = blkdiag(A_deq, [T_inv; -T_inv]);
+            A_deq = blkdiag(A_deq, [eye(2); -eye(2)]);
+
     
             d = T_inv*u_track;
             b_deq = [b_deq; s_ - d; s_ + d];
@@ -134,7 +137,7 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
        
         % squared norm of u_corr. H must be identity,
         % PREDICTION_HORIZON*size(u_corr)
-        H = eye(pred_hor*2);
+        H = eye(pred_hor*2)*2;
         % no linear terms
         f = zeros(pred_hor*2, 1);
     

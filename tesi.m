@@ -21,7 +21,8 @@ for i = 1:s_(1)
         sim_data.(fn{1}) = test_data.(fn{1});
     end
     
-    %sim_data.r=0.175
+    %sim_data.r=0.1
+    %sim_data.b=0.5
     sim_data.q0 = set_initial_conditions(sim_data.INITIAL_CONDITIONS);
     [ref dref] = set_trajectory(sim_data.TRAJECTORY, sim_data);
     sim_data.ref = ref;
@@ -95,6 +96,7 @@ function [t, q, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = simula
     U_corr = u_corr';
     U_track = u_track';
     Q_pred(:, :, 1) = q_pred;
+    y = [];
     
     for n = 1:steps
         sim_data.old_u_corr = u_corr;
@@ -111,6 +113,7 @@ function [t, q, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = simula
         q = [q; z];
         t = [t; v];
         
+        
         [u_discr, u_track, u_corr, U_corr_history, q_pred] = control_act(t(end), q(end, :), sim_data);
         sim_data.U_corr_history = U_corr_history;
         U = [U; ones(length(v), 1)*u_discr'];
@@ -118,7 +121,11 @@ function [t, q, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = simula
         U_track = [U_track; ones(length(v), 1)*u_track'];
         Q_pred(:, :, 1+n) = q_pred;
 	
-	U_corr_pred_history(:,:,n) = permute(U_corr_history, [3, 1, 2]);
+	    U_corr_pred_history(:,:,n) = permute(U_corr_history, [3, 1, 2]);
+        
+        y1 = q(:, 1) + sim_data.b * cos(q(:,3));
+        y2 = q(:, 2) + sim_data.b * sin(q(:,3));
+        y = [y; y1, y2];
     end
 
     ref_t = double(subs(sim_data.ref, t'))';
