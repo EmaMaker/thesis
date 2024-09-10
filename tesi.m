@@ -3,7 +3,7 @@ clear all
 close all
 
 %TESTS = ["sin_faster", "sin", "circle", "straightline", "reverse_straightline"]
-TESTS = ["figure8/fancyreps"]
+TESTS = ["circle/start_center"]
 
 s_ = size(TESTS);
 
@@ -20,7 +20,8 @@ for i = 1:s_(1)
     for fn = fieldnames(test_data)'
         sim_data.(fn{1}) = test_data.(fn{1});
     end
-
+    
+    %sim_data.r=0.175
     sim_data.q0 = set_initial_conditions(sim_data.INITIAL_CONDITIONS);
     [ref dref] = set_trajectory(sim_data.TRAJECTORY, sim_data);
     sim_data.ref = ref;
@@ -104,7 +105,8 @@ function [t, q, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = simula
         z0 = q(end, :);
         
         %[v, z] = ode45(@sistema_discr, tspan, z0, u_discr);
-        [v, z] = ode45(@(v, z) sistema_discr(v, z, u_discr, sim_data), tspan, z0);
+        opt = odeset('MaxStep', 0.005);
+        [v, z] = ode45(@(v, z) sistema_discr(v, z, u_discr, sim_data), tspan, z0, opt);
 
         q = [q; z];
         t = [t; v];
