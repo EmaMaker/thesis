@@ -2,8 +2,7 @@ clc
 clear all
 close all
 
-%TESTS = ["straightline/chill", "straightline/chill_errortheta_pisixths", "straightline/toofast", "straightline/chill_errory", "circle/start_center", "figure8/chill", "figure8/toofast", "square"]
-TESTS = ["circle/start_center"]
+TESTS = ["straightline/chill", "straightline/chill_errortheta_pisixths", "straightline/toofast", "straightline/chill_errory", "circle/start_center", "figure8/chill", "figure8/toofast", "square"]
 
 s_ = size(TESTS);
 
@@ -107,7 +106,6 @@ function [t, q, y, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = sim
         tspan = [(n-1)*tc n*tc];
         z0 = q(end, :);
         
-        %[v, z] = ode45(@sistema_discr, tspan, z0, u_discr);
         opt = odeset('MaxStep', 0.005);
         [v, z] = ode45(@(v, z) sistema_discr(v, z, u_discr, sim_data), tspan, z0, opt);
 
