@@ -16,9 +16,9 @@ function plot_error(t,ref,x)
     Axes.PlotBoxAspectRatio = [1 1 1];
     grid minor;
     
-    legend('FontSize', 22, 'Location', 'northeast', 'AutoUpdate','off')
-    xlabel("\textbf{t [s]}", FontSize=22, Interpreter="latex")
-    ylabel("\textbf{tracking error}", FontSize=22, Interpreter="latex")
+    legend('FontSize', 18, 'Location', 'northeast', 'AutoUpdate','off')
+    xlabel("\textbf{t [s]}", Interpreter="latex")
+    ylabel("\textbf{tracking error}", Interpreter="latex")
 
     hold off
 end

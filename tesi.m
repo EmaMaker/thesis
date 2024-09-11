@@ -2,27 +2,24 @@ clc
 clear all
 close all
 
-%TESTS = ["sin_faster", "sin", "circle", "straightline", "reverse_straightline"]
-TESTS = ["straightline/chill", "straightline/chill_errortheta_pisixths", "straightline/toofast", "straightline/chill_errory", "circle/start_center", "figure8/chill", "figure8/toofast", "square"]
+%TESTS = ["straightline/chill", "straightline/chill_errortheta_pisixths", "straightline/toofast", "straightline/chill_errory", "circle/start_center", "figure8/chill", "figure8/toofast", "square"]
+TESTS = ["circle/start_center"]
 
 s_ = size(TESTS);
 
-for i = 1:s_(1)    
-    clear data sim_data
+for i = 1:length(TESTS)
+    clearvars -except i s_ TESTS
     close all 
     
     sim_data = load(["tests/robot_common.mat"]);
 
     TEST = convertStringsToChars(TESTS(i))
     
-    
     test_data = load(['tests/' TEST '/common.mat']);
     for fn = fieldnames(test_data)'
         sim_data.(fn{1}) = test_data.(fn{1});
     end
     
-    %sim_data.r=0.1
-    %sim_data.b=0.5
     sim_data.q0 = set_initial_conditions(sim_data.INITIAL_CONDITIONS);
     [ref dref] = set_trajectory(sim_data.TRAJECTORY, sim_data);
     sim_data.ref = ref;

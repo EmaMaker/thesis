@@ -5,16 +5,16 @@ function tl = plot_trajectory(t, ref, x)
 
     hold on
     grid minor  
-    label_interval = 1:1200:length(x);
+    label_interval = 1:1800:length(x);
     labels = strcat(num2str(round(t(label_interval),1)), "s");
 
     %title("Reference trajectory / Robot position", "FontSize", 18)
     
-    plot(ref(:, 1), ref(:, 2), "DisplayName", "Reference trajectory", 'Color', 'blue', 'Linewidth', 12);
+    plot(ref(:, 1), ref(:, 2), "DisplayName", "Reference trajectory", 'Color', 'blue', 'Linewidth', 4, 'Linestyle', ':');
     %plot(x(:, 1), x(:, 2), "DisplayName", "Robot position", 'Color', 'green', 'Linewidth', 6);
-    [x_arr, y_arr] = arrowed_line(x(:, 1), x(:, 2), 600, 50, 50);
+    [x_arr, y_arr] = arrowed_line(x(:, 1), x(:, 2), 1200, 65, 65);
     plot(x_arr, y_arr, "DisplayName", "Robot position", 'Color', 'green', 'Linewidth', 4);
-    labelpoints(x(label_interval, 1), x(label_interval, 2), labels, 'N', 0.3, 'FontWeight', 'bold', 'FontSize', 15, 'Color', 'k', 'BackgroundColor', 'w');
+    labelpoints(x(label_interval, 1), x(label_interval, 2), labels, 'N', 0.35, 'FontWeight', 'bold', 'FontSize', 14, 'Color', 'k', 'BackgroundColor', 'w');
 
     Axes = gca;
     Axes.FontSize=22;
@@ -23,7 +23,7 @@ function tl = plot_trajectory(t, ref, x)
 
     xlabel('\textbf{x [m]}', 'Interpreter', 'latex');
     ylabel('\textbf{y [m]}', 'Interpreter', 'latex');
-    legend('FontSize', 22, 'Location', 'southeast', 'AutoUpdate','off')
+    legend('FontSize', 18, 'Location', 'southeast', 'AutoUpdate','off')
 
     %{
     xlim = Axes.XLim;
