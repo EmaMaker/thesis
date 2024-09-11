@@ -2,39 +2,59 @@ clc
 clear all
 close all
 
+% options
+ROBOT = 'unicycle'
 TESTS = ["straightline/chill", "straightline/chill_errortheta_pisixths", "straightline/toofast", "straightline/chill_errory", "circle/start_center", "figure8/chill", "figure8/toofast", "square"]
+%TESTS = ["circle/start_center"]
 
+% main
 s_ = size(TESTS);
-
 for i = 1:length(TESTS)
-    clearvars -except i s_ TESTS
+    clearvars -except i s_ TESTS ROBOT
     close all 
     
+    % load simulation parameters common to all robots and all tests
     sim_data = load(["tests/robot_common.mat"]);
 
     TEST = convertStringsToChars(TESTS(i))
     
+    % load test data (trajectory, etc)
     test_data = load(['tests/' TEST '/common.mat']);
     for fn = fieldnames(test_data)'
         sim_data.(fn{1}) = test_data.(fn{1});
     end
     
+    % set trajectory and starting conditions
     sim_data.q0 = set_initial_conditions(sim_data.INITIAL_CONDITIONS);
     [ref dref] = set_trajectory(sim_data.TRAJECTORY, sim_data);
     sim_data.ref = ref;
     sim_data.dref = dref;
-
+    
+    % spawn a new worker for each controller
+    % 1: track only
+    % 2: track + 1step
+    % 3: track + multistep
     spmd (3)
         worker_index = spmdIndex;
+        % load controller-specific options
         data = load(['tests/' num2str(worker_index) '.mat']);
-    
+        for fn = fieldnames(data)'
+            sim_data.(fn{1}) = data.(fn{1});
+        end
+
+        % load robot-specific options
+        % put here to overwrite any parameter value left over in the tests
+        % .mat files, just in case
+        data = load(['tests/' ROBOT '.mat']);
         for fn = fieldnames(data)'
             sim_data.(fn{1}) = data.(fn{1});
         end
         
+        % initialize prediction horizon
         sim_data.U_corr_history = zeros(2,1,sim_data.PREDICTION_HORIZON);
         sim_data
 
+        % simulate robot
         tic;
         [t, q, y, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = simulate_discr(sim_data);
         toc;
@@ -43,8 +63,8 @@ for i = 1:length(TESTS)
     end
     
     % save simulation data
-    f1 = [ TEST '/'  char(datetime, 'dd-MM-yyyy-HH-mm-ss')]; % windows compatible
-    f = ['results-diffdrive/' f1];
+    f1 = [ TEST '/'  char(datetime, 'dd-MM-yyyy-HH-mm-ss')]; % windows compatible name
+    f = ['results-' ROBOT '/' f1];
     mkdir(f)
     % save workspace
     dsave([f '/workspace_composite.mat']);
@@ -64,11 +84,11 @@ for i = 1:length(TESTS)
     subplot(2,1,1)
     plot(t{2}, U_corr{2}(:, 1) - U_corr{3}(:, 1))
     xlabel('t')
-    ylabel('difference on w_r between 1-step and multistep')
+    ylabel(['difference on ' sim_data{1}.input1_name ' between 1-step and multistep'])
     subplot(2,1,2)
     plot(t{2}, U_corr{2}(:, 2) - U_corr{3}(:, 2))
     xlabel('t')
-    ylabel('difference on w_l between 1-step and multistep')
+    ylabel(['difference on ' sim_data{1}.input2_name ' between 1-step and multistep'])
     % save figures
     savefig(h, [f '/figure.fig']);
 
@@ -97,6 +117,12 @@ function [t, q, y, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = sim
     U_track = u_track';
     Q_pred(:, :, 1) = q_pred;
     y = [];
+
+    if eq(sim_data.robot, 0)
+        fun = @(t, q, u_discr, sim_data) unicycle(t, q, u_discr, sim_data);
+    elseif eq(sim_data.robot, 1)
+        fun = @(t, q, u_discr, sim_data) diffdrive(t, q, u_discr, sim_data);
+    end
     
     for n = 1:steps
         sim_data.old_u_corr = u_corr;
@@ -107,7 +133,7 @@ function [t, q, y, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = sim
         z0 = q(end, :);
         
         opt = odeset('MaxStep', 0.005);
-        [v, z] = ode45(@(v, z) sistema_discr(v, z, u_discr, sim_data), tspan, z0, opt);
+        [v, z] = ode45(@(v, z) fun(v, z, u_discr, sim_data), tspan, z0, opt);
 
         q = [q; z];
         t = [t; v];

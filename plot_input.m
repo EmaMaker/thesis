@@ -1,4 +1,4 @@
-function plot_input(t, sat, U, type, orient)
+function plot_input(t, sat, U, orient, type, in1, in2, m1, m2)
 
 
 tiledlayout(1,1,'Padding','tight', 'TileSpacing','compact')
@@ -10,17 +10,17 @@ else
 subplot(2,1,1);
 end
 
-
-ylim_ = 7;
+ylim1_ = sat(1)*2.5;
+ylim2_ = sat(2)*2.5;
 
 hold on
 plot(t, U(:, 1), 'Linewidth', 6);
 
-plot(t, ones(1,length(t))*sat(1), 'Linewidth', 2.5, 'LineStyle', '--');
-plot(t, -ones(1,length(t))*sat(1), 'Linewidth', 2.5, 'LineStyle', '--');
+plot(t, ones(1,length(t))*sat(1), 'Linewidth', 2.5, 'LineStyle', '--', 'Color', 'black');
+plot(t, -ones(1,length(t))*sat(1), 'Linewidth', 2.5, 'LineStyle', '--', 'Color', 'black');
 
 xlabel('\textbf{t[s]}', 'Interpreter','latex');
-ylabel(['\textbf{$$\omega_r^{' type '}$$[rad/s]}'], 'Interpreter','latex');
+ylabel(['\textbf{$$' in1 '^{' type '}$$ [' m1 ']}'], 'Interpreter','latex');
 hold off
 
 
@@ -29,8 +29,7 @@ Axes.FontSize=26;
 Axes.FontWeight='bold';
 grid minor;
 Axes.PlotBoxAspectRatio = [1 1 1];
-ylim([-ylim_, ylim_])
-
+ylim([-ylim1_, ylim1_])
 
 if orient == 0
 subplot(1,2,2);
@@ -41,11 +40,11 @@ end
 hold on
 plot(t, U(:, 2), 'Linewidth', 6);
 
-plot(t, ones(1,length(t))*sat(1), 'Linewidth', 2, 'Color', 'black');
-plot(t, -ones(1,length(t))*sat(1), 'Linewidth', 2, 'Color', 'black');
+plot(t, ones(1,length(t))*sat(1), 'Linewidth', 2.5, 'LineStyle', '--', 'Color', 'black');
+plot(t, -ones(1,length(t))*sat(1), 'Linewidth', 2.5, 'LineStyle', '--', 'Color', 'black');
 
 xlabel('\textbf{t[s]}', 'Interpreter','latex');
-ylabel(['\textbf{$$\omega_l^{' type '}$$[rad/s]}'], 'Interpreter','latex');
+ylabel(['\textbf{$$' in2 '^{' type '}$$ [' m2 ']}'], 'Interpreter','latex');
 hold off
 
 Axes = gca;
@@ -53,7 +52,6 @@ Axes.FontSize=26;
 Axes.FontWeight='bold';
 grid minor;
 Axes.PlotBoxAspectRatio = [1 1 1];
-ylim([-ylim_, ylim_])
-
+ylim([-ylim2_, ylim2_])
 
 end

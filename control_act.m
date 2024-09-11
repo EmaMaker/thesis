@@ -69,10 +69,14 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
             u_track_ = utrack(t_, q_act, sim_data);
             
             T_inv = decouple_matrix(q_act, sim_data);
-            % compute inputs (wr, wl)
+            % compute inputs (v, w)/(wr, wl)
             u_ = T_inv * u_track_ + u_corr_;
-            % map (wr, wl) to (v, w) for unicicle
-            u_ = diffdrive_to_uni(u_, sim_data);
+            
+
+            % if needed, map (wr, wl) to (v, w) for unicicle
+            if eq(sim_data.robot, 1)
+                u_ = diffdrive_to_uni(u_, sim_data);
+            end
     
             % integrate unicycle
             theta_new = q_act(3) + tc*u_(2);
@@ -175,14 +179,15 @@ function T_inv = decouple_matrix(q, sim_data)
     ct = cos(theta);
     
     b = sim_data.b;
-    r = sim_data.r;
-    d = sim_data.d;
-    %a1 = sim_data.r*0.5;
-    %a2 = sim_data.b*sim_data.r/sim_data.d;
-    %det_inv = -sim_data.d/(sim_data.b*sim_data.r*sim_data.r);0
-    %T_inv = det_inv * [ a1*st - a2*ct, -a1*ct - a2*st;-a1*st-a2*ct , a1*ct - a2*st];
 
-    T_inv = [2*b*ct - d*st, d*ct + 2*b*st ; 2*b*ct + d*st, -d*ct+2*b*st] / (2*b*r);
+    if eq(sim_data.robot, 0)
+        T_inv = [ct, st; -st/b, ct/b];
+    elseif eq(sim_data.robot, 1)
+        r = sim_data.r;
+        d = sim_data.d;
+        
+        T_inv = [2*b*ct - d*st, d*ct + 2*b*st ; 2*b*ct + d*st, -d*ct+2*b*st] / (2*b*r);
+    end
 end
 
 
