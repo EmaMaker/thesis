@@ -118,23 +118,15 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
         % A will be at most PREDICTION_HORIZON * 2 * 2 (2: size of T_inv; 2:
         % accounting for T_inv and -T_inv) by PREDICTION_HORIZON (number of
         % vectors in u_corr times the number of elements [2] in each vector)
-        A_deq = [];
         b_deq = [];
-    
-        s_ = SATURATION - ones(2,1)*PREDICTION_SATURATION_TOLERANCE;
         for k=1:pred_hor
             T_inv = T_inv_pred(:,:,k);
             u_track = u_track_pred(:,:,k);
-    
-            % [T_inv; -T_inv] is a 4x2 matrix
-            %A_deq = blkdiag(A_deq, [T_inv; -T_inv]);
-            A_deq = blkdiag(A_deq, [eye(2); -eye(2)]);
-
-    
             d = T_inv*u_track;
             b_deq = [b_deq; s_ - d; s_ + d];
         end
         
+        A_deq = kron(eye(pred_hor), [eye(2); -eye(2)]);
         %A_deq
         %b_deq
         % unknowns
