@@ -1,12 +1,10 @@
 clc
 clear all
-close all
+close allQQQ
 
 %load('results-diffdrive/circle/start_center/10-09-2024 13-27-12/workspace_composite.mat')
-%load('results-diffdrive/circle/start_center/10-09-2024 15-33-08/workspace_composite.mat')
+load('results-diffdrive/circle/start_center/10-09-2024 15-33-08/workspace_composite.mat')
 %load('/home/emamaker/documents/Università/tesi/tesi-sim/results-diffdrive/square/10-09-2024 13-53-35/workspace_composite.mat')
-
-load('results-diffdrive/figure8/toofast/10-09-2024-22-35-17/workspace_composite.mat')
 
 
 

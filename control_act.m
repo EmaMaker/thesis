@@ -1,11 +1,9 @@
 function [u, ut, uc, U_corr_history, q_pred] = control_act(t, q, sim_data)   
     dc = decouple_matrix(q, sim_data);
     ut = utrack(t, q, sim_data);
-    [uc, U_corr_history, q_pred] = ucorr(t, q, sim_data);
-
     ut = dc*ut;
-    %uc = dc*uc;
-    %uc = zeros(2,1);
+
+    [uc, U_corr_history, q_pred] = ucorr(t, q, sim_data);
 
     u = ut+uc;
     % saturation
@@ -30,7 +28,8 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
     if eq(pred_hor, 0)
         return
     elseif eq(pred_hor, 1)
-        H = eye(2);
+        H = [1, 0; 0, -1];
+        %H = eye(2);
         f = zeros(2,1);
         T_inv = decouple_matrix(q_act, sim_data);
         ut = utrack(t, q_act, sim_data);
@@ -41,8 +40,8 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
         b = [s_-d;s_+d];
         
         % solve qp problem
-        options = optimoptions('quadprog', 'Display', 'off');
-        u_corr = quadprog(H, f, A, b, [],[],[],[],[],options);
+        options = optimoptions('quadprog');
+        u_corr = quadprog(H, f, A, b, [],[],[],[],[],options)
         
         q_pred = q_act;
         U_corr_history(:,:,1) = u_corr;
@@ -133,7 +132,8 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
        
         % squared norm of u_corr. H must be identity,
         % PREDICTION_HORIZON*size(u_corr)
-        H = eye(pred_hor*2)*2;
+        %H = eye(pred_hor*2)*2;
+        H = kron(eye(pred_hor), [1,0;0,0]);
         % no linear terms
         f = zeros(pred_hor*2, 1);
     
