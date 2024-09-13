@@ -149,7 +149,7 @@ function [t, q, y, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = sim
         
         y1 = q(:, 1) + sim_data.b * cos(q(:,3));
         y2 = q(:, 2) + sim_data.b * sin(q(:,3));
-        y = [y; y1, y2];
+        y = [y; [y1, y2]];
     end
 
     ref_t = double(subs(sim_data.ref, t'))';
