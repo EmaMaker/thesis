@@ -8,7 +8,6 @@ disp('Photos will start in 3s')
 pause(3)
 
 PLOT_TESTS = [
-    %{
     "results-diffdrive/straightline/chill/11-09-2024-16-57-01";
     "results-diffdrive/straightline/chill_errortheta_pisixths/11-09-2024-16-57-43";
     "results-diffdrive/straightline/chill_errory/11-09-2024-16-59-04";
@@ -18,17 +17,16 @@ PLOT_TESTS = [
     "results-diffdrive/figure8/chill/11-09-2024-17-00-53";
     %"results-diffdrive/figure8/fancyreps/11-09-2024--45-28";
     "results-diffdrive/figure8/toofast/11-09-2024-17-01-43";
-    %}
 
-    %"results-unicycle/straightline/chill/11-09-2024-17-07-51";
-    %"results-unicycle/straightline/chill_errortheta_pisixths/11-09-2024-17-08-35";
-    %"results-unicycle/straightline/chill_errory/11-09-2024-17-10-00";
-    %"results-unicycle/straightline/toofast/11-09-2024-17-09-18";
-    %"results-unicycle/circle/start_center/11-09-2024-17-10-48";
+    "results-unicycle/straightline/chill/11-09-2024-17-07-51";
+    "results-unicycle/straightline/chill_errortheta_pisixths/11-09-2024-17-08-35";
+    "results-unicycle/straightline/chill_errory/11-09-2024-17-10-00";
+    "results-unicycle/straightline/toofast/11-09-2024-17-09-18";
+    "results-unicycle/circle/start_center/11-09-2024-17-10-48";
     "results-unicycle/square/11-09-2024-17-17-21";
-    %"results-unicycle/figure8/chill/11-09-2024-17-11-53";
+    "results-unicycle/figure8/chill/11-09-2024-17-11-53";
     %"results-unicycle/figure8/fancyreps/11-09-2024--45-28";
-    %"results-unicycle/figure8/toofast/11-09-2024-17-12-45";
+    "results-unicycle/figure8/toofast/11-09-2024-17-12-45";
     ]
 
 s_ = size(PLOT_TESTS)
@@ -60,7 +58,7 @@ for i = 1:s_(1)
         pause(0.5); export_fig(gcf, '-transparent', [dir, num2str(n), '_triple_input_1x2.png'])
         pause(1); clf; plot_tripleinput(t{n}, sim_data{n}.SATURATION, U{n}, U_track{n}, U_corr{n}, 1, in1, in2, m1, m2)
         pause(0.5); export_fig(gcf, '-transparent', [dir, num2str(n), '_triple_input_2x1.png'])
-        
+       
         %pause(1); clf; plot_input(t{n}, sim_data{n}.SATURATION, U_track{n}, 'track')
         %pause(0.5); export_fig(gcf, '-transparent', [dir, num2str(n), '_track_input.png'])
         %pause(1); clf; plot_input(t{n}, sim_data{n}.SATURATION, U_corr{n}, 'corr')
@@ -70,6 +68,11 @@ for i = 1:s_(1)
         pause(0.5); export_fig(gcf, '-transparent', [dir, num2str(n), '_total_input_1x2.png'])
         pause(1); clf; plot_input(t{n},sim_data{n}.SATURATION,  U{n}, 1, '', in1, in2, m1, m2)
         pause(0.5); export_fig(gcf, '-transparent', [dir, num2str(n), '_total_input_2x1.png'])
+
+        pause(1); clf; plot_trajectory(t{n}, ref_t{n}, y{n})
+        pause(0.5); export_fig(gcf, '-transparent', [dir, num2str(n), '_trajectory_out.png'])
+        pause(1); clf; plot_error(t{n}, ref_t{n}, y{n})
+        pause(0.5); export_fig(gcf, '-transparent', [dir, num2str(n), '_error_out.png'])
     end
     
     % correction difference (multistep, 1-step)
@@ -95,5 +98,4 @@ for i = 1:s_(1)
     pause(0.5); export_fig(gcf, '-transparent', [dir, 'input_diff_1step_multistep_1x2.png'])
     pause(1); clf; plot_input_diff(t{2}, t{3}, U{2}, U{3}, 1, ['\textbf{$$' in1 '^{1step}$$}'], ['\textbf{$$' in1 '^{multistep}$$}'], ['\textbf{$$' in2 '^{1step}$$}'], ['\textbf{$$' in2 '^{multistep}$$}'], m1, m2)
     pause(0.5); export_fig(gcf, '-transparent', [dir, 'input_diff_1step_multistep_2x1.png'])
-
 end
