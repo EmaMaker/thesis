@@ -3,9 +3,9 @@ clear all
 close all
 
 % options
-ROBOT = 'unicycle'
-TESTS = ["straightline/chill", "straightline/chill_errortheta_pisixths", "straightline/toofast", "straightline/chill_errory", "circle/start_center", "figure8/chill", "figure8/toofast", "square"]
-%TESTS = ["circle/start_center"]
+ROBOT = 'diffdrive'
+%TESTS = ["straightline/chill", "straightline/chill_errortheta_pisixths", "straightline/toofast", "straightline/chill_errory", "circle/start_center", "figure8/chill", "figure8/toofast", "square"]
+TESTS = ["circle/start_center"]
 
 % main
 s_ = size(TESTS);
@@ -29,12 +29,13 @@ for i = 1:length(TESTS)
     [ref dref] = set_trajectory(sim_data.TRAJECTORY, sim_data);
     sim_data.ref = ref;
     sim_data.dref = dref;
+    %sim_data.tfin = 15;
     
     % spawn a new worker for each controller
     % 1: track only
     % 2: track + 1step
     % 3: track + multistep
-    spmd (3)
+    spmd (2)
         worker_index = spmdIndex;
         % load controller-specific options
         data = load(['tests/' num2str(worker_index) '.mat']);
@@ -64,7 +65,7 @@ for i = 1:length(TESTS)
     
     % save simulation data
     f1 = [ TEST '/'  char(datetime, 'dd-MM-yyyy-HH-mm-ss')]; % windows compatible name
-    f = ['results-' ROBOT '/' f1];
+    f = ['results-' ROBOT '-costfun/' f1];
     mkdir(f)
     % save workspace
     dsave([f '/workspace_composite.mat']);
@@ -149,7 +150,7 @@ function [t, q, y, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = sim
         
         y1 = q(:, 1) + sim_data.b * cos(q(:,3));
         y2 = q(:, 2) + sim_data.b * sin(q(:,3));
-        y = [y; y1, y2];
+        y = [y; [y1, y2]];
     end
 
     ref_t = double(subs(sim_data.ref, t'))';
