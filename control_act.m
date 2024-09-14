@@ -30,19 +30,16 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
     if eq(pred_hor, 0)
         return
     elseif eq(pred_hor, 1)
-        H = eye(2);
+        H = eye(2)*2;
         f = zeros(2,1);
         T_inv = decouple_matrix(q_act, sim_data);
         ut = utrack(t, q_act, sim_data);
-        %A = [T_inv; -T_inv];        
-        A = [eye(2); -eye(2)];
-
+        
         d = T_inv*ut;
-        b = [s_-d;s_+d];
         
         % solve qp problem
         options = optimoptions('quadprog', 'Display', 'off');
-        u_corr = quadprog(H, f, A, b, [],[],[],[],[],options);
+        u_corr = quadprog(H, f, [], [], [],[], -s_ - d, s_-d, [], options);
         
         q_pred = q_act;
         U_corr_history(:,:,1) = u_corr;
@@ -113,34 +110,25 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
             put in matrix (Ax <= b) form
         %}
     
-        % box constrains
-        % A becomes sort of block-diagonal
-        % A will be at most PREDICTION_HORIZON * 2 * 2 (2: size of T_inv; 2:
-        % accounting for T_inv and -T_inv) by PREDICTION_HORIZON (number of
-        % vectors in u_corr times the number of elements [2] in each vector)
-        b_deq = [];
+        % box constraints
+        lb = [];
+        ub = [];
         for k=1:pred_hor
             T_inv = T_inv_pred(:,:,k);
             u_track = u_track_pred(:,:,k);
             d = T_inv*u_track;
-            b_deq = [b_deq; s_ - d; s_ + d];
+            lb = [lb; -s_-d];
+            ub = [ub; s_-d];
         end
-        
-        A_deq = kron(eye(pred_hor), [eye(2); -eye(2)]);
-        %A_deq
-        %b_deq
-        % unknowns
        
         % squared norm of u_corr. H must be identity,
-        % PREDICTION_HORIZON*size(u_corr)
         H = eye(pred_hor*2)*2;
         % no linear terms
         f = zeros(pred_hor*2, 1);
     
         % solve qp problem
         options = optimoptions('quadprog', 'Display', 'off');
-        U_corr = quadprog(H, f, A_deq, b_deq, [],[],[],[],[],options);
-        %U_corr = lsqnonlin(@(pred_hor) ones(pred_hor, 1), U_corr_history(:,:,1), [], [], A_deq, b_deq, [], []);
+        U_corr = quadprog(H, f, [], [], [],[],lb,ub,[],options);
     
         % reshape the vector of vectors to be an array, each element being
         % u_corr_j as a 2x1 vector
