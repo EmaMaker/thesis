@@ -8,6 +8,7 @@ ROBOT = 'diffdrive'
 TESTS = ["circle/start_center"]
 
 % main
+
 s_ = size(TESTS);
 for i = 1:length(TESTS)
     clearvars -except i s_ TESTS ROBOT
@@ -24,7 +25,6 @@ for i = 1:length(TESTS)
         sim_data.(fn{1}) = test_data.(fn{1});
     end
     
-    sim_data.r = 0.06
     % set trajectory and starting conditions
     sim_data.q0 = set_initial_conditions(sim_data.INITIAL_CONDITIONS);
     [ref dref] = set_trajectory(sim_data.TRAJECTORY, sim_data);

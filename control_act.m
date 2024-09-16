@@ -31,9 +31,10 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
     elseif eq(pred_hor, 1)
         T_inv = decouple_matrix(q_act, sim_data);
         ut = utrack(t, q_act, sim_data);
+        
+        % minimize v
+        H = 2*eye(2);
 
-        H = 2 * (T_inv') * T_inv;
-        %H = eye(2);
         f = zeros(2,1);
         A = [T_inv; -T_inv];        
         %A = [eye(2); -eye(2)];
@@ -121,19 +122,14 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
         % vectors in u_corr times the number of elements [2] in each vector)
         A_deq = [];
         b_deq = [];
-        H1 = [];
         for k=1:pred_hor
             T_inv = T_inv_pred(:,:,k);
             u_track = u_track_pred(:,:,k);
             d = T_inv*u_track;
 
-            H1 = blkdiag(H1, T_inv);
-            H2 = blkdiag(H2, T_inv');
             A_deq = blkdiag(A_deq, [T_inv; -T_inv]);
             b_deq = [b_deq; s_ - d; s_ + d];
         end
-
-        H = H1'*H1;
         
         %A_deq = kron(eye(pred_hor), [eye(2); -eye(2)]);
         %A_deq
@@ -143,7 +139,8 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
         % squared norm of u_corr. H must be identity,
         % PREDICTION_HORIZON*size(u_corr)
         %H = eye(pred_hor*2)*2;
-        %H = kron(eye(pred_hor), [1,0;0,0]);
+        H = kron(eye(pred_hor), 2*eye(2));
+        %H = kron(eye(pred_hor), 2*ones(2,2));
         % no linear terms
         f = zeros(pred_hor*2, 1);
     
