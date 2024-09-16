@@ -32,7 +32,8 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
         T_inv = decouple_matrix(q_act, sim_data);
         ut = utrack(t, q_act, sim_data);
 
-        H = 2 * (T_inv') * T_inv;
+        TH = T_inv;
+        H = 2 * (TH') * [1, 0; 0, 0] * [1, 0; 0, 0] * TH;
         %H = eye(2);
         f = zeros(2,1);
         A = [T_inv; -T_inv];        
@@ -127,8 +128,9 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
             u_track = u_track_pred(:,:,k);
             d = T_inv*u_track;
 
-            H1 = blkdiag(H1, T_inv);
-            H2 = blkdiag(H2, T_inv');
+            TH = [1, 0; 0, 0] * T_inv;
+            H1 = blkdiag(H1, TH);
+
             A_deq = blkdiag(A_deq, [T_inv; -T_inv]);
             b_deq = [b_deq; s_ - d; s_ + d];
         end
