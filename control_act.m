@@ -2,9 +2,10 @@ function [u, ut, uc, U_corr_history, q_pred] = control_act(t, q, sim_data)
     dc = decouple_matrix(q, sim_data);
     ut = utrack(t, q, sim_data);
     ut = dc*ut;
-
+    
     [uc, U_corr_history, q_pred] = ucorr(t, q, sim_data);
-
+    
+    uc = dc*uc;
     u = ut+uc;
     % saturation
     u = min(sim_data.SATURATION, max(-sim_data.SATURATION, u));
@@ -28,20 +29,21 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
     if eq(pred_hor, 0)
         return
     elseif eq(pred_hor, 1)
-        H = [1, 0; 0, -1];
-        %H = eye(2);
-        f = zeros(2,1);
         T_inv = decouple_matrix(q_act, sim_data);
         ut = utrack(t, q_act, sim_data);
-        %A = [T_inv; -T_inv];        
-        A = [eye(2); -eye(2)];
+
+        H = 2 * (T_inv') * T_inv;
+        %H = eye(2);
+        f = zeros(2,1);
+        A = [T_inv; -T_inv];        
+        %A = [eye(2); -eye(2)];
 
         d = T_inv*ut;
         b = [s_-d;s_+d];
         
         % solve qp problem
-        options = optimoptions('quadprog');
-        u_corr = quadprog(H, f, A, b, [],[],[],[],[],options)
+        options = optimoptions('quadprog', 'Display', 'off');
+        u_corr = quadprog(H, f, A, b, [],[],[],[],[],options);
         
         q_pred = q_act;
         U_corr_history(:,:,1) = u_corr;
@@ -69,7 +71,7 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
             
             T_inv = decouple_matrix(q_act, sim_data);
             % compute inputs (v, w)/(wr, wl)
-            u_ = T_inv * u_track_ + u_corr_;
+            u_ = T_inv * (u_track_ + u_corr_);
             
 
             % if needed, map (wr, wl) to (v, w) for unicicle
@@ -117,15 +119,23 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
         % A will be at most PREDICTION_HORIZON * 2 * 2 (2: size of T_inv; 2:
         % accounting for T_inv and -T_inv) by PREDICTION_HORIZON (number of
         % vectors in u_corr times the number of elements [2] in each vector)
+        A_deq = [];
         b_deq = [];
+        H1 = [];
         for k=1:pred_hor
             T_inv = T_inv_pred(:,:,k);
             u_track = u_track_pred(:,:,k);
             d = T_inv*u_track;
+
+            H1 = blkdiag(H1, T_inv);
+            H2 = blkdiag(H2, T_inv');
+            A_deq = blkdiag(A_deq, [T_inv; -T_inv]);
             b_deq = [b_deq; s_ - d; s_ + d];
         end
+
+        H = H1'*H1;
         
-        A_deq = kron(eye(pred_hor), [eye(2); -eye(2)]);
+        %A_deq = kron(eye(pred_hor), [eye(2); -eye(2)]);
         %A_deq
         %b_deq
         % unknowns
@@ -133,7 +143,7 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
         % squared norm of u_corr. H must be identity,
         % PREDICTION_HORIZON*size(u_corr)
         %H = eye(pred_hor*2)*2;
-        H = kron(eye(pred_hor), [1,0;0,0]);
+        %H = kron(eye(pred_hor), [1,0;0,0]);
         % no linear terms
         f = zeros(pred_hor*2, 1);
     

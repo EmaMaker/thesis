@@ -24,6 +24,7 @@ for i = 1:length(TESTS)
         sim_data.(fn{1}) = test_data.(fn{1});
     end
     
+    sim_data.r = 0.06
     % set trajectory and starting conditions
     sim_data.q0 = set_initial_conditions(sim_data.INITIAL_CONDITIONS);
     [ref dref] = set_trajectory(sim_data.TRAJECTORY, sim_data);
@@ -35,7 +36,7 @@ for i = 1:length(TESTS)
     % 1: track only
     % 2: track + 1step
     % 3: track + multistep
-    spmd (2)
+    spmd (3)
         worker_index = spmdIndex;
         % load controller-specific options
         data = load(['tests/' num2str(worker_index) '.mat']);
