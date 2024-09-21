@@ -1,166 +1,134 @@
-function [u, ut, uc, U_corr_history, q_pred] = control_act(t, q, sim_data)   
-    dc = decouple_matrix(q, sim_data);
-    ut = utrack(t, q, sim_data);
-    ut = dc*ut;
-    
-    [uc, U_corr_history, q_pred] = ucorr(t, q, sim_data);
-    
-    uc = dc*uc;
-    u = ut+uc;
-    % saturation
-    u = min(sim_data.SATURATION, max(-sim_data.SATURATION, u));
-end
-
-function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
+function [u, ut, q_pred] = control_act(t, q, sim_data)   
     pred_hor = sim_data.PREDICTION_HORIZON;
+    
+    % track only
+    if eq(pred_hor, 0)
+
+        dc = decouple_matrix(q, sim_data);
+        ut = utrack(t, q, sim_data);
+        u = dc*ut;
+        
+        % saturation
+        u = min(sim_data.SATURATION, max(-sim_data.SATURATION, u));
+        prob = [];
+        q_pred = [];
+        return
+    end
+    
+    % mpc
     SATURATION = sim_data.SATURATION;
     PREDICTION_SATURATION_TOLERANCE = sim_data.PREDICTION_SATURATION_TOLERANCE;
     tc = sim_data.tc;
-
-    u_corr = zeros(2,1);
-    U_corr_history = zeros(2,1,sim_data.PREDICTION_HORIZON);
-    q_act = q;
-    u_track_pred=zeros(2,1, pred_hor);
-    T_inv_pred=zeros(2,2, pred_hor);
-
-    q_pred = [];
-
     s_ = SATURATION - ones(2,1)*PREDICTION_SATURATION_TOLERANCE;
-    if eq(pred_hor, 0)
-        return
-    elseif eq(pred_hor, 1)
-        T_inv = decouple_matrix(q_act, sim_data);
-        ut = utrack(t, q_act, sim_data);
 
-        TH = T_inv;
-        H = 2 * (TH') * [1, 0; 0, 0] * [1, 0; 0, 0] * TH;
-        %H = eye(2);
-        f = zeros(2,1);
-        A = [T_inv; -T_inv];        
-        %A = [eye(2); -eye(2)];
+    % prediction
+    %T_invs = zeros(2,2, pred_hor);
+    %Qs = zeros(3,1,pred_hor);
+    %drefs = zeros(2,1, pred_hor);
+    %refs = zeros(2,1, pred_hor);
 
-        d = T_inv*ut;
-        b = [s_-d;s_+d];
+    % optim problem
+    prob = optimproblem('ObjectiveSense', 'minimize');
+    % objective
+    obj = 0;
+    % decision vars
+    ss_ = repmat(s_, [1,1, pred_hor]);
+    ucorr = optimvar('ucorr', 2, pred_hor,'LowerBound', -ss_, 'UpperBound', ss_);
+    % state vars
+    Q = optimvar('state', 3, pred_hor);
+    % initial conditions
+    prob.Constraints.evo = Q(:, 1) == q';
+
+    
+    % linearization around robot trajectory
+    % only needs to be calculated once
+    theta = q(3);
+    st = sin(theta);
+    ct = cos(theta);       
+    T_inv = decouple_matrix(q, sim_data);
+    
+
+    for k=1:pred_hor
+        t_ = t + tc * (k-1);
         
-        % solve qp problem
-        options = optimoptions('quadprog', 'Display', 'off');
-        u_corr = quadprog(H, f, A, b, [],[],[],[],[],options);
-        
-        q_pred = q_act;
-        U_corr_history(:,:,1) = u_corr;
-        return
-    else
-        %if pred_hor > 1
-            % move the horizon over 1 step and add trailing zeroes
-            U_corr_history = cat(3, sim_data.U_corr_history(:,:, 2:end), zeros(2,1));
-        %end
-    
-        %disp('start of simulation')
-        % for each step in the prediction horizon, integrate the system to
-        % predict its future state
-    
-        for k = 1:pred_hor
-            % start from the old (known) state
-    
-            % compute the inputs, based on the old state
-    
-            % u_corr is the prediction done at some time in the past, as found in U_corr_history
-            u_corr_ = U_corr_history(:, :, k);
-            % u_track can be computed from q
-            t_ = t + tc * (k-1);
-            u_track_ = utrack(t_, q_act, sim_data);
-            
-            T_inv = decouple_matrix(q_act, sim_data);
-            % compute inputs (v, w)/(wr, wl)
-            u_ = T_inv * (u_track_ + u_corr_);
-            
+        % reference trajectory and derivative
+        ref_s = double(subs(sim_data.ref, t_));
+        dref_s = double(subs(sim_data.dref, t_));
 
-            % if needed, map (wr, wl) to (v, w) for unicicle
-            if eq(sim_data.robot, 1)
-                u_ = diffdrive_to_uni(u_, sim_data);
-            end
-    
-            % integrate unicycle
-            theta_new = q_act(3) + tc*u_(2);
-            % compute the state integrating with euler
-            %x_new = q_act(1) + tc*u_(1) * cos(q_act(3));
-            %y_new = q_act(2) + tc*u_(1) * sin(q_act(3));
-            % compute the state integrating via runge-kutta
-            x_new = q_act(1) + tc*u_(1) * cos(q_act(3) + 0.5*tc*u_(2));
-            y_new = q_act(2) + tc*u_(1) * sin(q_act(3) + 0.5*tc*u_(2));
-    
-            q_new = [x_new; y_new; theta_new];
-    
-            % save history
-            q_pred = [q_pred; q_new'];
-            u_track_pred(:,:,k) = u_track_;
-            T_inv_pred(:,:,k) = T_inv;
-    
-            % Prepare old state for next iteration
-            q_act = q_new;
-        end
-    
         %{
-            Now setup the qp problem
-            It needs:
-            - Unknowns, u_corr at each timestep. Will be encoded as a vector of
-            vectors, in which every two elements is a u_j
-            i.e. (u_1; u_2; u_3; ...; u_C) = (v_1; w_1; v_2, w_2; v_3, w_3; ...
-            ; v_C, w_C)
-            It is essential that the vector stays a column, so that u'u is the
-            sum of the squared norms of each u_j
-    
-            - Box constraints: a constraint for each timestep in the horizon.
-            Calculated using the predicted state and inputs. They need to be
-            put in matrix (Ax <= b) form
+        % linearization around trajectory trajectory, hybrid approach
+        % theta from reference position and velocity
+        if eq(k, 1)
+            % only for the first step, theta from the current state
+            theta = q(3);
+        else
+            % then linearize around reference trajectory
+            % proper way
+            theta = mod( atan2(dref_s(2), dref_s(1)) + 2*pi, 2*pi);
+            % or, derivative using difference. Seem to give the same
+            % results
+            %ref_s1 = double(subs(sim_data.ref, t_ + tc));
+            %theta = atan2(ref_s1(2)-ref_s(2), ref_s1(1)-ref_s(1));
+        end
+        st = sin(theta);
+        ct = cos(theta);       
+        T_inv = decouple_matrix([ref_s(1); ref_s(2); theta], sim_data);
         %}
-    
-        % box constrains
-        % A becomes sort of block-diagonal
-        % A will be at most PREDICTION_HORIZON * 2 * 2 (2: size of T_inv; 2:
-        % accounting for T_inv and -T_inv) by PREDICTION_HORIZON (number of
-        % vectors in u_corr times the number of elements [2] in each vector)
-        A_deq = [];
-        b_deq = [];
-        H1 = [];
-        for k=1:pred_hor
-            T_inv = T_inv_pred(:,:,k);
-            u_track = u_track_pred(:,:,k);
-            d = T_inv*u_track;
 
-            TH = [1, 0; 0, 0] * T_inv;
-            H1 = blkdiag(H1, TH);
+        %{
+        % linearization around trajectory trajectory, "correct" approach
+        theta = mod( atan2(dref_s(2), dref_s(1)) + 2*pi, 2*pi);
+        st = sin(theta);
+        ct = cos(theta);       
+        T_inv = decouple_matrix([ref_s(1); ref_s(2); theta], sim_data);
+        %}
+                    
+        
+        % not at the end of the horizon
+        if k < pred_hor - 1
+            if eq(sim_data.robot, 0)
+                % inputs for unicycle
+                v = ucorr(1,k);
+                w = ucorr(2,k);
+            else
+                % inputs for differential drive
+                v = sim_data.r * (ucorr(1,k) + ucorr(2,k)) / 2;
+                w = sim_data.r * (ucorr(1,k) - ucorr(2,k)) / sim_data.d;
+            end
 
-            A_deq = blkdiag(A_deq, [T_inv; -T_inv]);
-            b_deq = [b_deq; s_ - d; s_ + d];
+            % evolution constraints
+            c = Q(:, k+1) == Q(:, k) + [v*tc*ct; v*tc*st; w*tc];
+            prob.Constraints.evo = [prob.Constraints.evo; c];
         end
 
-        H = H1'*H1;
-        
-        %A_deq = kron(eye(pred_hor), [eye(2); -eye(2)]);
-        %A_deq
-        %b_deq
-        % unknowns
-       
-        % squared norm of u_corr. H must be identity,
-        % PREDICTION_HORIZON*size(u_corr)
-        %H = eye(pred_hor*2)*2;
-        %H = kron(eye(pred_hor), [1,0;0,0]);
-        % no linear terms
-        f = zeros(pred_hor*2, 1);
-    
-        % solve qp problem
-        options = optimoptions('quadprog', 'Display', 'off');
-        U_corr = quadprog(H, f, A_deq, b_deq, [],[],[],[],[],options);
-        %U_corr = lsqnonlin(@(pred_hor) ones(pred_hor, 1), U_corr_history(:,:,1), [], [], A_deq, b_deq, [], []);
-    
-        % reshape the vector of vectors to be an array, each element being
-        % u_corr_j as a 2x1 vector
-        % and add the prediction at t_k+C
-        U_corr_history = reshape(U_corr, [2,1,pred_hor]);
-        % first result is what to do now
-        u_corr=U_corr_history(:,:, 1);
+        % objective
+        % sum of squared norms of u-q^d
+
+        % feedback + tracking input
+        % cannot use the utrack function, or the current formulation makes
+        % the problem become non linear
+        err = ref_s - [Q(1, k) + sim_data.b*ct; Q(2, k) + sim_data.b*st ];
+        ut_ = dref_s + sim_data.K*err;
+        %ut = utrack(t_, Q(k, :), sim_data);
+        qd = T_inv*ut_;
+        ud = ucorr(:, k)-qd;
+        obj = obj + (ud')*ud;
     end
+    % end linearization around trajectory
+
+
+    prob.Objective = obj;
+    %show(prob)
+    %disp("to struct")
+    %prob2struct(prob);
+    
+    opts=optimoptions(@quadprog,'Display','off');
+    sol = solve(prob, 'Options',opts);
+    u = sol.ucorr(:, 1);
+    q_pred = sol.state';
+
+    % ideal tracking for the predicted state
+    ut = decouple_matrix(q_pred, sim_data)*utrack(t, q_pred, sim_data);
 end
 
 function u_track = utrack(t, q, sim_data)    

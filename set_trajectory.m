@@ -6,7 +6,7 @@ switch i
         % a straigth line trajectory at v=0.2m/s
         xref = 0.2*s;
         yref = 0;
-    case 1
+        case 1
         % a straigth line trajectory at v=0.8m/s
         xref = 0.8*s;
         yref = 0;

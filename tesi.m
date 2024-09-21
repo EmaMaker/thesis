@@ -5,6 +5,7 @@ close all
 % options
 ROBOT = 'diffdrive'
 %TESTS = ["straightline/chill", "straightline/chill_errortheta_pisixths", "straightline/toofast", "straightline/chill_errory", "circle/start_center", "figure8/chill", "figure8/toofast", "square"]
+%TESTS = ["straightline/chill", "straightline/chill_errortheta_3deg", "circle/start_center", "square", "figure8/chill"]
 TESTS = ["circle/start_center"]
 
 % main
@@ -24,7 +25,6 @@ for i = 1:length(TESTS)
         sim_data.(fn{1}) = test_data.(fn{1});
     end
     
-    sim_data.r = 0.06
     % set trajectory and starting conditions
     sim_data.q0 = set_initial_conditions(sim_data.INITIAL_CONDITIONS);
     [ref dref] = set_trajectory(sim_data.TRAJECTORY, sim_data);
@@ -51,6 +51,10 @@ for i = 1:length(TESTS)
         for fn = fieldnames(data)'
             sim_data.(fn{1}) = data.(fn{1});
         end
+
+        if sim_data.PREDICTION_HORIZON > 1
+            sim_data.PREDICITON_HORIZON = 40
+        end
         
         % initialize prediction horizon
         sim_data.U_corr_history = zeros(2,1,sim_data.PREDICTION_HORIZON);
@@ -58,7 +62,7 @@ for i = 1:length(TESTS)
 
         % simulate robot
         tic;
-        [t, q, y, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = simulate_discr(sim_data);
+        [t, q, y, ref_t, U, U_track, Q_pred] = simulate_discr(sim_data);
         toc;
     
         disp('Done')
@@ -66,7 +70,7 @@ for i = 1:length(TESTS)
     
     % save simulation data
     f1 = [ TEST '/'  char(datetime, 'dd-MM-yyyy-HH-mm-ss')]; % windows compatible name
-    f = ['results-' ROBOT '-costfun/' f1];
+    f = ['results-' ROBOT '-costfun2-soltraj/' f1];
     mkdir(f)
     % save workspace
     dsave([f '/workspace_composite.mat']);
@@ -79,16 +83,16 @@ for i = 1:length(TESTS)
     s1_ = size(worker_index);
     for n = 1:s1_(2)
         h = [h, figure('Name', [TEST ' ' num2str(n)] )];
-        plot_results(t{n}, q{n}, ref_t{n}, U{n}, U_track{n}, U_corr{n});
+        plot_results(t{n}, q{n}, ref_t{n}, U{n}, U_track{n}, U_track{n});
     end
     % plot correction different between 1-step and multistep
     h = [h, figure('Name', 'difference between 1step and multistep')];
     subplot(2,1,1)
-    plot(t{2}, U_corr{2}(:, 1) - U_corr{3}(:, 1))
+    plot(t{2}, U{2}(:, 1) - U{3}(:, 1))
     xlabel('t')
     ylabel(['difference on ' sim_data{1}.input1_name ' between 1-step and multistep'])
     subplot(2,1,2)
-    plot(t{2}, U_corr{2}(:, 2) - U_corr{3}(:, 2))
+    plot(t{2}, U{2}(:, 2) - U{3}(:, 2))
     xlabel('t')
     ylabel(['difference on ' sim_data{1}.input2_name ' between 1-step and multistep'])
     % save figures
@@ -100,37 +104,31 @@ for i = 1:length(TESTS)
 end
 
 
+
 %% FUNCTION DECLARATIONS
 
 % Discrete-time simulation
-function [t, q, y, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = simulate_discr(sim_data)
+function [t, q, y, ref_t, U, U_track, Q_pred] = simulate_discr(sim_data)
     tc = sim_data.tc;
     steps = sim_data.tfin/tc
     
     q = sim_data.q0';
     t = 0;
-    Q_pred = zeros(sim_data.PREDICTION_HORIZON,3,sim_data.tfin/sim_data.tc + 1);
-    U_corr_pred_history=zeros(sim_data.PREDICTION_HORIZON,2,steps);
 
-    [u_discr, u_track, u_corr, U_corr_history, q_pred] = control_act(t, q, sim_data);
-    sim_data.U_corr_history = U_corr_history;
+    Q_pred = zeros(sim_data.PREDICTION_HORIZON,3, steps + 1);
+
+    [u_discr, u_track, q_pred] = control_act(t(end), q(end, :), sim_data);
     U = u_discr';
-    U_corr = u_corr';
     U_track = u_track';
     Q_pred(:, :, 1) = q_pred;
-    y = [];
 
     if eq(sim_data.robot, 0)
         fun = @(t, q, u_discr, sim_data) unicycle(t, q, u_discr, sim_data);
     elseif eq(sim_data.robot, 1)
         fun = @(t, q, u_discr, sim_data) diffdrive(t, q, u_discr, sim_data);
     end
-    
-    for n = 1:steps
-        sim_data.old_u_corr = u_corr;
-        sim_data.old_u_track = u_track;
-        sim_data.old_u = u_discr;
 
+    for n = 1:steps
         tspan = [(n-1)*tc n*tc];
         z0 = q(end, :);
         
@@ -140,21 +138,16 @@ function [t, q, y, ref_t, U, U_track, U_corr, U_corr_pred_history, Q_pred] = sim
         q = [q; z];
         t = [t; v];
                 
-        [u_discr, u_track, u_corr, U_corr_history, q_pred] = control_act(t(end), q(end, :), sim_data);
-        sim_data.U_corr_history = U_corr_history;
-        U = [U; ones(length(v), 1)*u_discr'];
-        U_corr = [U_corr; ones(length(v), 1)*u_corr'];
+        [u_discr, u_track, q_pred] = control_act(t(end), q(end, :), sim_data);
+        U = [U; ones(length(v), 1)*u_discr'];        
         U_track = [U_track; ones(length(v), 1)*u_track'];
         Q_pred(:, :, 1+n) = q_pred;
-	
-	    U_corr_pred_history(:,:,n) = permute(U_corr_history, [3, 1, 2]);
-        
-        y1 = q(:, 1) + sim_data.b * cos(q(:,3));
-        y2 = q(:, 2) + sim_data.b * sin(q(:,3));
-        y = [y; [y1, y2]];
     end
+
+    y1 = q(:, 1) + sim_data.b * cos(q(:,3));
+    y2 = q(:, 2) + sim_data.b * sin(q(:,3));
+    y = [y1, y2];
 
     ref_t = double(subs(sim_data.ref, t'))';
 end
 
-%% 

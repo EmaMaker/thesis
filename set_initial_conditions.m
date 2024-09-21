@@ -20,5 +20,7 @@ switch i
         q0 = [0;0;pi/2];
     case 9
         q0 = [2.5; 0; pi/2];
+    case 10
+        q0 = [0;0;deg2rad(3)];
 end
 end
