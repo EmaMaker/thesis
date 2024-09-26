@@ -3,7 +3,7 @@ clear all
 close all
 
 % options
-ROBOT = 'diffdrive'
+ROBOT = 'unicycle'
 %TESTS = ["straightline/chill", "straightline/chill_errortheta_pisixths", "straightline/toofast", "straightline/chill_errory", "circle/start_center", "figure8/chill", "figure8/toofast", "square"]
 TESTS = ["circle/start_center"]
 
@@ -36,7 +36,7 @@ for i = 1:length(TESTS)
     % 1: track only
     % 2: track + 1step
     % 3: track + multistep
-    spmd (3)
+    spmd (2)
         worker_index = spmdIndex;
         % load controller-specific options
         data = load(['tests/' num2str(worker_index) '.mat']);

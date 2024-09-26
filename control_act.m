@@ -32,8 +32,27 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
         T_inv = decouple_matrix(q_act, sim_data);
         ut = utrack(t, q_act, sim_data);
         
-        % minimize v
+        % minimize v, unicycle and ddr
+        % actually minimize xdot^2 + ydot^2 = v
         H = 2*eye(2);
+
+        % minimize vcorr^2 + wcorr^2, unicycle and ddr
+        %H = T_inv
+        
+        if eq(sim_data.robot, 0)
+            % ex3: unicycle, minimize v
+            %H = T_inv' * [1 0; 0 0] * T_inv;
+            % ex4: unicycle, minimize w
+            %H = T_inv' * [0 0; 0 1] * T_inv;
+        else
+            % ex1: ddr, minimize v. det(H) = 0 H not symmetric
+            %R = [sim_data.r/2 sim_data.r/2]
+            %H = T_inv' * R' * R * T_inv;
+
+            % ex2: ddr, minimize w. det(H) = 0
+            %R = [sim_data.r/sim_data.d -sim_data.r/sim_data.d]
+            %H = T_inv' * R' * R * T_inv;
+        end
 
         f = zeros(2,1);
         A = [T_inv; -T_inv];        
