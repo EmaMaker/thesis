@@ -30,7 +30,14 @@ function [u_corr, U_corr_history, q_pred] = ucorr(t, q, sim_data)
     if eq(pred_hor, 0)
         return
     elseif eq(pred_hor, 1)
-        H = eye(2)*2;
+        % minimize wcorr_r^2 + wcorr_l^2
+        %H = eye(2);
+
+        % ex1: minimize v=r(wr+wl)/2
+        %H = sim_data.r*sim_data.r*0.5*ones(2,2);
+        % ex2: minimize w=r(wr-wl)/d
+        H = sim_data.r*sim_data.r*2*[1, -1; -1, 1]/(sim_data.d*sim_data.d);
+
         f = zeros(2,1);
         T_inv = decouple_matrix(q_act, sim_data);
         ut = utrack(t, q_act, sim_data);
